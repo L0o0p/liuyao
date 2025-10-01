@@ -28,12 +28,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 1; // 默认选中学习页面（中间位置）
 
   final List<Widget> _pages = const [
-    LearnScreen(),
-    ReviewScreen(),
-    ProgressScreen(),
+    ReviewScreen(), // 复习 - 第一个位置
+    LearnScreen(), // 学习 - 中间位置
+    ProgressScreen(), // 进度 - 第三个位置
   ];
 
   void _onItemTapped(int index) {
@@ -50,8 +50,8 @@ class _HomePageState extends State<HomePage> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.school), label: '学习'),
           BottomNavigationBarItem(icon: Icon(Icons.refresh), label: '复习'),
+          BottomNavigationBarItem(icon: Icon(Icons.school), label: '学习'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '进度'),
         ],
       ),
