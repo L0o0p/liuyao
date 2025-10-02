@@ -36,21 +36,40 @@ class _FlipCardState extends State<FlipCard> {
     return Card(
       margin: EdgeInsets.all(cardMargin),
       elevation: 4,
-      child: Padding(
+      child: Container(
         padding: EdgeInsets.all(cardPadding),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+        ),
         child: SingleChildScrollView(
           // 添加滚动支持，防止内容溢出
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // 问题文本
-              Text(
-                widget.question.text,
-                style: TextStyle(
-                  fontSize: questionFontSize,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 20,
                 ),
-                textAlign: TextAlign.center,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).primaryColor.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  widget.question.text,
+                  style: TextStyle(
+                    fontSize: questionFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
               SizedBox(height: verticalSpacing),
 
@@ -59,7 +78,9 @@ class _FlipCardState extends State<FlipCard> {
                 final isSelected = selectedOption == option;
                 final isCorrectOption = option == widget.question.correctAnswer;
 
-                Color buttonColor = Colors.blue;
+                Color buttonColor = Theme.of(
+                  context,
+                ).primaryColor.withOpacity(0.6);
                 if (hasAnswered) {
                   // 确保正确答案总是绿色
                   if (isCorrectOption) {
@@ -92,7 +113,7 @@ class _FlipCardState extends State<FlipCard> {
                             // 如果答案正确，延迟一下显示反馈，然后自动翻页
                             if (isCorrect && widget.onCorrectAnswer != null) {
                               Future.delayed(
-                                const Duration(milliseconds: 1500),
+                                const Duration(milliseconds: 300),
                                 () {
                                   widget.onCorrectAnswer!();
                                 },
@@ -100,14 +121,22 @@ class _FlipCardState extends State<FlipCard> {
                             }
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: buttonColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: hasAnswered
+                          ? buttonColor
+                          : Theme.of(context).primaryColor.withOpacity(0.1),
+                      foregroundColor: hasAnswered
+                          ? Colors.white
+                          : Theme.of(context).primaryColor,
                       padding: EdgeInsets.symmetric(
                         vertical: isSmallScreen ? 12.0 : 16.0, // 根据屏幕大小调整按钮高度
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: hasAnswered ? 2 : 0,
+                      shadowColor: hasAnswered
+                          ? buttonColor.withOpacity(0.3)
+                          : Colors.transparent,
                     ),
                     child: Text(
                       option,
@@ -124,14 +153,26 @@ class _FlipCardState extends State<FlipCard> {
                   width: double.infinity,
                   padding: EdgeInsets.all(isSmallScreen ? 16.0 : 24.0),
                   decoration: BoxDecoration(
-                    color: isCorrect
-                        ? Colors.green.shade100
-                        : Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(
+                      colors: isCorrect
+                          ? [Colors.green.shade50, Colors.green.shade100]
+                          : [Colors.red.shade50, Colors.red.shade100],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isCorrect ? Colors.green : Colors.red,
                       width: 2,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isCorrect ? Colors.green : Colors.red)
+                            .withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
                     children: [

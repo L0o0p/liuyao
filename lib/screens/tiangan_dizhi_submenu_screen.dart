@@ -1,75 +1,83 @@
 import 'package:flutter/material.dart';
 import 'study_module_screen.dart';
-import 'tiangan_dizhi_submenu_screen.dart';
 
-class LearnScreen extends StatelessWidget {
-  const LearnScreen({super.key});
+class TianGanDiZhiSubmenuScreen extends StatelessWidget {
+  const TianGanDiZhiSubmenuScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(title: const Text("选择学习板块"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text(
+          "天干地支基础",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0), // 减少边距以适应小屏幕
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                "六爻基础",
+                "选择学习内容",
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24), // 减少间距
+              const SizedBox(height: 24),
               Expanded(
                 child: SingleChildScrollView(
-                  // 添加滚动支持
                   child: Column(
                     children: [
-                      _buildModuleButton(
+                      _buildSubmenuButton(
                         context,
-                        title: "天干地支基础",
-                        subtitle: "五行、阴阳、方位、时间、生克关系",
-                        icon: Icons.auto_stories,
-                        onTap: () => _navigateToSubmenu(context),
+                        title: "天干地支五行",
+                        subtitle: "学习天干地支的五行属性",
+                        icon: Icons.eco,
+                        onTap: () =>
+                            _navigateToModule(context, 'tiangandizhi_wuxing'),
                       ),
-                      const SizedBox(height: 12), // 减少间距
-                      _buildModuleButton(
+                      const SizedBox(height: 12),
+                      _buildSubmenuButton(
                         context,
-                        title: "十二支指诀",
-                        subtitle: "地支对应手指关节的快速记忆法",
+                        title: "天干地支阴阳",
+                        subtitle: "掌握天干地支的阴阳属性",
+                        icon: Icons.brightness_6,
+                        onTap: () =>
+                            _navigateToModule(context, 'tiangandizhi_yinyang'),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildSubmenuButton(
+                        context,
+                        title: "方位对应",
+                        subtitle: "了解天干地支对应的方位",
+                        icon: Icons.explore,
+                        onTap: () => _navigateToModule(
+                          context,
+                          'tiangandizhi_direction',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildSubmenuButton(
+                        context,
+                        title: "时间对应",
+                        subtitle: "掌握天干地支对应的时间",
+                        icon: Icons.schedule,
+                        onTap: () =>
+                            _navigateToModule(context, 'tiangandizhi_time'),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildSubmenuButton(
+                        context,
+                        title: "五行生克",
+                        subtitle: "学习五行之间的生克关系",
                         icon: Icons.psychology,
-                        onTap: () => _navigateToModule(context, 'wuxing'),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildModuleButton(
-                        context,
-                        title: "六合三合六冲三害",
-                        subtitle: "判断人事关系、事情走向的规则",
-                        icon: Icons.compare_arrows,
-                        onTap: () => _navigateToModule(context, 'hechong'),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildModuleButton(
-                        context,
-                        title: "十二长生",
-                        subtitle: "用来判断某个爻（事物）的旺衰强弱",
-                        icon: Icons.timeline,
                         onTap: () =>
-                            _navigateToModule(context, 'shierchangsheng'),
+                            _navigateToModule(context, 'tiangandizhi_shengke'),
                       ),
-                      const SizedBox(height: 12),
-                      _buildModuleButton(
-                        context,
-                        title: "综合练习",
-                        subtitle: "混合各种题型，全面复习",
-                        icon: Icons.quiz,
-                        onTap: () =>
-                            _navigateToModule(context, 'comprehensive'),
-                      ),
-                      const SizedBox(height: 16), // 底部额外间距
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -81,7 +89,7 @@ class LearnScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildModuleButton(
+  Widget _buildSubmenuButton(
     BuildContext context, {
     required String title,
     required String subtitle,
@@ -156,15 +164,6 @@ class LearnScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _navigateToSubmenu(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const TianGanDiZhiSubmenuScreen(),
       ),
     );
   }
