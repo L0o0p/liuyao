@@ -113,7 +113,7 @@ class _FlipCardState extends State<FlipCard> {
                             // 如果答案正确，延迟一下显示反馈，然后自动翻页
                             if (isCorrect && widget.onCorrectAnswer != null) {
                               Future.delayed(
-                                const Duration(milliseconds: 300),
+                                const Duration(milliseconds: 3000),
                                 () {
                                   widget.onCorrectAnswer!();
                                 },

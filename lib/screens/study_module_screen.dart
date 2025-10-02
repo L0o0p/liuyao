@@ -194,7 +194,7 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
                       // 自动翻到下一张卡片
                       if (index < questions.length - 1) {
                         _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
+                          duration: const Duration(milliseconds: 3000),
                           curve: Curves.easeInOut,
                         );
                       }

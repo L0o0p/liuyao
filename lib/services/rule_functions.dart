@@ -40,12 +40,13 @@ String getWuXingChangSheng(String riZhi, String yaoZhi) {
   final startZhi = wuXingChangShengStart[wuXing]!;
   // 起点索引
   final startIndex = diZhiCycle.indexOf(startZhi);
-  final riIndex = diZhiCycle.indexOf(riZhi);
+  final yaoIndex = diZhiCycle.indexOf(yaoZhi);
 
-  if (riIndex < 0 || startIndex < 0) return "未知";
+  if (yaoIndex < 0 || startIndex < 0) return "未知";
 
-  // 算日支和长生起点之间的 offset
-  int offset = (riIndex - startIndex) % 12;
+  // 计算爻支相对于长生起点的位置
+  // 从长生起点开始，按地支顺序计算爻支是第几个位置
+  int offset = (yaoIndex - startIndex) % 12;
   if (offset < 0) offset += 12; // 转正
 
   return changShengCycle[offset];

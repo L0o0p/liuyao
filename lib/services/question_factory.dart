@@ -131,12 +131,17 @@ class QuestionFactory {
 
   // 十二长生
   static Question generateChangShengQuestion() {
-    // 随机一个“日支”作为卜日
+    // 随机一个"日支"作为卜日
     final riZhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    // 随机一个“爻地支”
+    // 随机一个"爻地支"
     final yaoZhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
 
     final correct = getWuXingChangSheng(riZhi, yaoZhi);
+
+    // 如果正确答案是"未知"，重新生成题目
+    if (correct == "未知") {
+      return generateChangShengQuestion();
+    }
 
     // 随机三个干扰项
     final wrong = List<String>.from(changShengCycle)..remove(correct);
