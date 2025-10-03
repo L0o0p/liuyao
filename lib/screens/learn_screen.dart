@@ -30,6 +30,13 @@ class LearnScreen extends StatelessWidget {
                     children: [
                       _buildModuleButton(
                         context,
+                        title: "六十四卦",
+                        subtitle: "速记六十四卦卦象",
+                        icon: Icons.auto_stories,
+                        onTap: () => _navigateToSubmenu(context),
+                      ),
+                      _buildModuleButton(
+                        context,
                         title: "天干地支基础",
                         subtitle: "五行、阴阳、方位、时间、生克",
                         icon: Icons.auto_stories,

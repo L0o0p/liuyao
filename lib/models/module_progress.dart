@@ -118,3 +118,4 @@ class ModuleProgress {
     return totalCorrectCount / total;
   }
 }
+
