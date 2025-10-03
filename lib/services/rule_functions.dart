@@ -1,4 +1,5 @@
 import 'package:liuyao/data/di_zhi.dart';
+import 'package:liuyao/data/wu_xing.dart';
 import 'package:liuyao/data/zhi_relations.dart';
 
 import '../data/tian_gan.dart';
@@ -112,4 +113,12 @@ String getFingerJointZhi(String fingerJoint) {
     orElse: () => {},
   );
   return match["name"] ?? "未知";
+}
+
+String getWuXingSheng(String wuXing) {
+  return wuXingSheng[wuXing] ?? "未知";
+}
+
+String getWuXingKe(String wuXing) {
+  return wuXingKe[wuXing] ?? "未知";
 }

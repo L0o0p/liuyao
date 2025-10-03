@@ -19,18 +19,26 @@ class TianGanDiZhiSubmenuScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                "选择学习内容",
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              // Text(
+              //   "选择学习内容",
+              //   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              //     fontWeight: FontWeight.bold,
+              //   ),
+              //   textAlign: TextAlign.center,
+              // ),
               const SizedBox(height: 24),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      _buildSubmenuButton(
+                        context,
+                        title: "综合练习",
+                        subtitle: "综合练习天干地支五行、阴阳、方位、时间、生克关系",
+                        icon: Icons.quiz,
+                        onTap: () =>
+                            _navigateToModule(context, 'tiangandizhi_comprehensive'),
+                      ),
                       _buildSubmenuButton(
                         context,
                         title: "天干地支五行",

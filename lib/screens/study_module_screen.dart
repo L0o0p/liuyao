@@ -72,14 +72,14 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
           (_) => QuestionFactory.generateChangShengQuestion(),
         );
         break;
-      case 'directiontime':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateDirectionTimeQuestion(),
-        );
-        break;
       // 新的天干地支子模块
       case 'tiangandizhi_wuxing':
+        questions = List.generate(
+          5,
+          (_) => QuestionFactory.generateTianGanDizhiQuestion(),
+        );
+        break;
+      case 'tiangandizhi_comprehensive':
         questions = List.generate(
           5,
           (_) => QuestionFactory.generateTianGanDizhiQuestion(),
@@ -88,19 +88,19 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
       case 'tiangandizhi_yinyang':
         questions = List.generate(
           5,
-          (_) => QuestionFactory.generateTianGanDizhiQuestion(),
+          (_) => QuestionFactory.generateTianGanDizhiYinYangQuestion(),
         );
         break;
       case 'tiangandizhi_direction':
         questions = List.generate(
           5,
-          (_) => QuestionFactory.generateDirectionTimeQuestion(),
+          (_) => QuestionFactory.generateDirectionQuestion(),
         );
         break;
       case 'tiangandizhi_time':
         questions = List.generate(
           5,
-          (_) => QuestionFactory.generateDirectionTimeQuestion(),
+          (_) => QuestionFactory.generateTimeQuestion(),
         );
         break;
       case 'tiangandizhi_shengke':
