@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../widgets/flip_card.dart';
 import '../models/question.dart';
+import '../models/wrong_question_record.dart';
 import '../services/round_manager.dart';
+import '../services/storage_service.dart';
+import '../services/question_reconstructor.dart';
 
 class StudyModuleScreen extends StatefulWidget {
   final String moduleType;
@@ -91,6 +94,34 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
   String _getModeHint() {
     if (_isLoading) return "";
     return _roundManager.isFirstRoundCompleted ? "复习模式" : "首轮学习";
+  }
+
+  /// 记录错题
+  /// 使用题目推断算法自动识别题目类型和输入参数
+  Future<void> _recordWrongQuestion(
+    Question question,
+    String userAnswer,
+  ) async {
+    try {
+      // 尝试从题目内容推断题目类型和输入参数
+      final info = QuestionReconstructor.inferQuestionTypeAndInput(question);
+
+      if (info != null) {
+        final record = WrongQuestionRecord(
+          questionType: info['questionType']!,
+          input: info['input']!,
+          correctAnswer: question.correctAnswer,
+          userAnswer: userAnswer,
+        );
+
+        await StorageService.recordWrongQuestion(record);
+        print('✓ 已记录错题: ${record.questionType} - ${record.input}');
+      } else {
+        print('⚠ 无法识别题目类型，未记录错题: ${question.text}');
+      }
+    } catch (e) {
+      print('✗ 记录错题失败: $e');
+    }
   }
 
   /// 处理完成本轮学习
@@ -199,6 +230,13 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
                         // 完成本轮
                         await _onRoundComplete();
                       }
+                    },
+                    onWrongAnswer: (userAnswer) async {
+                      // 记录答题结果
+                      await _roundManager.submitAnswer(index, false);
+
+                      // 记录错题
+                      await _recordWrongQuestion(q, userAnswer);
                     },
                   );
                 },

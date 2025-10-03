@@ -4,8 +4,14 @@ import '../models/question.dart';
 class FlipCard extends StatefulWidget {
   final Question question;
   final VoidCallback? onCorrectAnswer;
+  final void Function(String userAnswer)? onWrongAnswer;
 
-  const FlipCard({super.key, required this.question, this.onCorrectAnswer});
+  const FlipCard({
+    super.key,
+    required this.question,
+    this.onCorrectAnswer,
+    this.onWrongAnswer,
+  });
 
   @override
   State<FlipCard> createState() => _FlipCardState();
@@ -118,6 +124,10 @@ class _FlipCardState extends State<FlipCard> {
                                   widget.onCorrectAnswer!();
                                 },
                               );
+                            } else if (!isCorrect &&
+                                widget.onWrongAnswer != null) {
+                              // 答错了，通知外部记录错题
+                              widget.onWrongAnswer!(option);
                             }
                           },
                     style: ElevatedButton.styleFrom(
