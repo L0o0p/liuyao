@@ -31,7 +31,7 @@ class LearnScreen extends StatelessWidget {
                       _buildModuleButton(
                         context,
                         title: "天干地支基础",
-                        subtitle: "五行、阴阳、方位、时间、生克关系",
+                        subtitle: "五行、阴阳、方位、时间、生克",
                         icon: Icons.auto_stories,
                         onTap: () => _navigateToSubmenu(context),
                       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/flip_card.dart';
 import '../models/question.dart';
-import '../services/question_factory.dart';
+import '../services/round_manager.dart';
 
 class StudyModuleScreen extends StatefulWidget {
   final String moduleType;
@@ -14,13 +14,15 @@ class StudyModuleScreen extends StatefulWidget {
 
 class _StudyModuleScreenState extends State<StudyModuleScreen> {
   final PageController _pageController = PageController();
-  late List<Question> questions;
+  late RoundManager _roundManager;
+  List<Question> questions = [];
   int _currentPageIndex = 0;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadQuestions();
+    _initializeRoundManager();
     _pageController.addListener(_onPageChanged);
   }
 
@@ -39,83 +41,20 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
     }
   }
 
-  void _loadQuestions() {
-    // 根据 moduleType 生成不同的题目
-    switch (widget.moduleType) {
-      case 'tiangandizhi':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateTianGanDizhiQuestion(),
-        );
-        break;
-      case 'wuxing':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateFingerJointQuestion(),
-        );
-        break;
-      case 'hechong':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateXingChongHeChongQuestion(),
-        );
-        break;
-      case 'comprehensive':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateGanWuXingQuestion(),
-        );
-        break;
-      case 'shierchangsheng':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateChangShengQuestion(),
-        );
-        break;
-      // 新的天干地支子模块
-      case 'tiangandizhi_wuxing':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateTianGanDizhiQuestion(),
-        );
-        break;
-      case 'tiangandizhi_comprehensive':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateTianGanDizhiQuestion(),
-        );
-        break;
-      case 'tiangandizhi_yinyang':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateTianGanDizhiYinYangQuestion(),
-        );
-        break;
-      case 'tiangandizhi_direction':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateDirectionQuestion(),
-        );
-        break;
-      case 'tiangandizhi_time':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateTimeQuestion(),
-        );
-        break;
-      case 'tiangandizhi_shengke':
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateTianGanDizhiQuestion(),
-        );
-        break;
-      default:
-        questions = List.generate(
-          5,
-          (_) => QuestionFactory.generateGanWuXingQuestion(),
-        );
-    }
-    setState(() {});
+  /// 初始化题表管理器
+  /// 加载用户进度并生成题目
+  Future<void> _initializeRoundManager() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    _roundManager = RoundManager(widget.moduleType);
+    await _roundManager.initialize();
+
+    setState(() {
+      questions = _roundManager.questions;
+      _isLoading = false;
+    });
   }
 
   String _getModuleTitle() {
@@ -148,13 +87,69 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
     }
   }
 
+  /// 获取学习模式提示文字
+  String _getModeHint() {
+    if (_isLoading) return "";
+    return _roundManager.isFirstRoundCompleted ? "复习模式" : "首轮学习";
+  }
+
+  /// 处理完成本轮学习
+  Future<void> _onRoundComplete() async {
+    await _roundManager.completeRound();
+
+    if (!mounted) return;
+
+    // 显示完成提示
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("🎉 完成本轮学习"),
+        content: Text(
+          _roundManager.isFirstRoundCompleted
+              ? "恭喜完成本轮复习！\n正确率：${(_roundManager.progress.accuracy * 100).toStringAsFixed(1)}%"
+              : "恭喜完成首轮学习！\n已解锁复习模式",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(); // 返回上一页
+            },
+            child: const Text("返回"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _initializeRoundManager(); // 开始新一轮
+            },
+            child: const Text("继续练习"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _getModuleTitle(),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              _getModuleTitle(),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            if (!_isLoading)
+              Text(
+                _getModeHint(),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+          ],
         ),
         actions: [
           Container(
@@ -179,7 +174,7 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
           ),
         ],
       ),
-      body: questions.isEmpty
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
               // 添加SafeArea确保内容不被状态栏遮挡
@@ -190,13 +185,19 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
                   final q = questions[index];
                   return FlipCard(
                     question: q,
-                    onCorrectAnswer: () {
+                    onCorrectAnswer: () async {
+                      // 记录答题结果
+                      await _roundManager.submitAnswer(index, true);
+
                       // 自动翻到下一张卡片
                       if (index < questions.length - 1) {
                         _pageController.nextPage(
-                          duration: const Duration(milliseconds: 3000),
+                          duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
+                      } else {
+                        // 完成本轮
+                        await _onRoundComplete();
                       }
                     },
                   );
