@@ -85,6 +85,8 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
         return "时间对应";
       case 'tiangandizhi_shengke':
         return "五行生克";
+      case '64gua':
+        return "六十四卦";
       default:
         return "学习";
     }

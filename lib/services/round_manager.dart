@@ -144,6 +144,18 @@ class RoundManager {
         );
         break;
 
+      case '64gua':
+        // 六十四卦：每个卦各出一题，共64题
+        // 由于题目数量较多，分为两种类型：卦名→卦象 和 卦象→卦名
+        // 每种类型各32题，确保全覆盖
+        for (int i = 0; i < 32; i++) {
+          questions.add(Questions.generateGuaToXiangQuestion());
+        }
+        for (int i = 0; i < 32; i++) {
+          questions.add(Questions.generateXiangToGuaQuestion());
+        }
+        break;
+
       default:
         // 其他模块：生成10题
         questions.addAll(
@@ -237,6 +249,8 @@ class RoundManager {
         return Questions.generateFingerJointForwardQuestion();
       case 'shierchangsheng':
         return Questions.generateChangShengQuestion();
+      case '64gua':
+        return Questions.generate64GuaQuestion();
       default:
         return Questions.generateGanWuXingQuestion();
     }
@@ -330,4 +344,3 @@ class RoundManager {
     await _generateQuestions();
   }
 }
-

@@ -2,6 +2,7 @@ import 'package:liuyao/data/di_zhi.dart';
 import 'package:liuyao/data/wu_xing.dart';
 import 'package:liuyao/data/zhi_relations.dart';
 import '../data/tian_gan.dart';
+import '../data/gua_data.dart';
 import 'rule_functions.dart';
 import '../models/question.dart';
 import 'dart:math';
@@ -556,6 +557,69 @@ class Questions {
       generateGanTimeQuestion, // 天干时间
       generateZhiTimeQuestion, // 地支时间
       generateZhiHourQuestion, // 地支小时
+    ];
+
+    // 随机选择一个生成器
+    final generator = generators[_rnd.nextInt(generators.length)];
+    return generator();
+  }
+
+  // ========== 六十四卦题目生成器 ==========
+
+  /// 卦名到卦象题目生成器
+  /// 给出卦名（如「大有」），要求选出卦象组合（如「火天」）
+  static Question generateGuaToXiangQuestion() {
+    // 从所有卦名中随机选择一个作为题目
+    final guaNames = getAllGuaNames();
+    final correctGua = guaNames[_rnd.nextInt(guaNames.length)];
+    final correctXiang = getGuaXiang(correctGua)!;
+
+    // 生成错误选项：从其他卦象中随机选择
+    final allXiang = getAllGuaXiang();
+    final wrongOptions = List<String>.from(allXiang)..remove(correctXiang);
+    wrongOptions.shuffle(_rnd);
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correctXiang, ...wrongOptions.take(3)];
+    options.shuffle(_rnd);
+
+    return Question(
+      text: "卦「$correctGua」的卦象是哪个？",
+      options: options,
+      correctAnswer: correctXiang,
+    );
+  }
+
+  /// 卦象到卦名题目生成器
+  /// 给出卦象组合（如「火天」），要求选出卦名（如「大有」）
+  static Question generateXiangToGuaQuestion() {
+    // 从所有卦名中随机选择一个作为题目
+    final guaNames = getAllGuaNames();
+    final correctGua = guaNames[_rnd.nextInt(guaNames.length)];
+    final correctXiang = getGuaXiang(correctGua)!;
+
+    // 生成错误选项：从其他卦名中随机选择
+    final wrongOptions = List<String>.from(guaNames)..remove(correctGua);
+    wrongOptions.shuffle(_rnd);
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correctGua, ...wrongOptions.take(3)];
+    options.shuffle(_rnd);
+
+    return Question(
+      text: "卦象「$correctXiang」对应的卦名是哪个？",
+      options: options,
+      correctAnswer: correctGua,
+    );
+  }
+
+  /// 六十四卦综合题目生成器
+  /// 随机生成卦名到卦象或卦象到卦名的题目
+  static Question generate64GuaQuestion() {
+    // 题型生成器池子
+    final generators = [
+      generateGuaToXiangQuestion, // 卦名 → 卦象
+      generateXiangToGuaQuestion, // 卦象 → 卦名
     ];
 
     // 随机选择一个生成器

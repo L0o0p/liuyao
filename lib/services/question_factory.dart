@@ -111,6 +111,12 @@ class QuestionFactory {
     return Questions.generateTianGanDizhiComprehensiveQuestion();
   }
 
+  /// 六十四卦题目生成器
+  /// 包含卦名到卦象和卦象到卦名的配对题目
+  static Question generate64GuaQuestion() {
+    return Questions.generate64GuaQuestion();
+  }
+
   // ========== 基础题目生成器（供内部调用） ==========
 
   /// 天干五行题目生成器

@@ -33,7 +33,7 @@ class LearnScreen extends StatelessWidget {
                         title: "六十四卦",
                         subtitle: "速记六十四卦卦象",
                         icon: Icons.auto_stories,
-                        onTap: () => _navigateToSubmenu(context),
+                        onTap: () => _navigateToModule(context, '64gua'),
                       ),
                       _buildModuleButton(
                         context,
