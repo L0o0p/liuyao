@@ -58,6 +58,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
       icon: Icons.timeline,
       color: Colors.deepOrange,
     ),
+    ModuleConfig(
+      id: '64gua',
+      name: '六十四卦',
+      icon: Icons.grain,
+      color: Colors.brown,
+    ),
   ];
 
   /// 存储所有模块的进度数据

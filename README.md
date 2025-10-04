@@ -11,6 +11,7 @@
 - ✅ **智能题表管理**：首轮全覆盖 + 复习模式自动切换
 - 📊 **学习进度追踪**：实时记录学习数据和熟练度
 - 🎯 **薄弱点强化**：根据答题情况智能调整出题策略
+- 📝 **错题本系统**：参数化存储 + 动态重建，高效复习错题
 - 💾 **本地数据持久化**：使用 SharedPreferences 保存进度
 - 🎨 **现代化 UI 设计**：美观流畅的用户体验
 
@@ -23,26 +24,29 @@ lib/
 ├── main.dart                          # 应用入口
 ├── models/                            # 数据模型层
 │   ├── question.dart                  # 题目数据模型
-│   └── module_progress.dart           # 模块进度数据模型
+│   ├── module_progress.dart           # 模块进度数据模型
+│   └── wrong_question_record.dart     # 错题记录数据模型
 ├── services/                          # 业务逻辑层
 │   ├── question_factory.dart          # 题目工厂（按模块生成题目）
 │   ├── questions.dart                 # 具体题目生成器集合
 │   ├── rule_functions.dart            # 六爻规则函数（查询天干地支属性）
 │   ├── storage_service.dart           # 本地存储服务
+│   ├── question_reconstructor.dart    # 错题重建器（从参数重建题目）
 │   └── round_manager.dart             # 题表管理器（核心）
 ├── screens/                           # 页面层
 │   ├── learn_screen.dart              # 学习模块选择页
 │   ├── tiangan_dizhi_submenu_screen.dart # 天干地支子菜单页
 │   ├── study_module_screen.dart       # 学习页面（答题界面）
 │   ├── progress_screen.dart           # 进度统计页
-│   └── review_screen.dart             # 复习页（待实现）
+│   └── review_screen.dart             # 错题复习页面
 ├── widgets/                           # 组件层
 │   └── flip_card.dart                 # 翻卡片答题组件
 └── data/                              # 数据层（静态数据）
     ├── tian_gan.dart                  # 十天干数据
     ├── di_zhi.dart                    # 十二地支数据
     ├── wu_xing.dart                   # 五行生克关系
-    └── zhi_relations.dart             # 地支关系（六合、三合、六冲等）
+    ├── zhi_relations.dart             # 地支关系（六合、三合、六冲等）
+    └── gua_data.dart                  # 六十四卦数据
 ```
 
 ### 架构设计
@@ -214,6 +218,10 @@ final progress = ModuleProgress.fromJson(jsonDecode(jsonString));
 - **内容**：判断爻的旺衰强弱（长生、沐浴、冠带等）
 - **题量**：首轮20题，复习20题
 
+### 8. 六十四卦
+- **内容**：六十四卦卦名与卦象的对应关系
+- **题量**：首轮64题（卦名→卦象 32题 + 卦象→卦名 32题），复习20题
+
 ## 🎨 UI/UX 设计
 
 ### 设计原则
@@ -240,6 +248,12 @@ final progress = ModuleProgress.fromJson(jsonDecode(jsonString));
 - 模块进度列表（带状态徽章）
 - 点击卡片直接跳转学习
 - 支持单个/全部进度重置
+
+#### 4. 错题复习页（Review Screen）
+- 错题本功能，智能重建错题
+- 参数化存储，节省空间
+- 支持重复练习，累计错误统计
+- 按最近答错时间排序
 
 ## 🔧 技术栈
 
@@ -415,13 +429,14 @@ double getWeakRatio() {
 ## 🎯 未来规划
 
 ### 短期计划
+- [x] 错题本功能 - 已完成六十四卦模块错题支持
 - [ ] 添加答题历史记录查看
 - [ ] 实现知识点详情页（查看天干地支属性表）
 - [ ] 添加学习提醒功能
 - [ ] 支持深色模式
 
 ### 中期计划
-- [ ] 添加错题本功能
+- [ ] 完善错题本功能（其他模块支持）
 - [ ] 实现学习曲线可视化
 - [ ] 支持云端同步（可选）
 - [ ] 添加成就系统

@@ -384,6 +384,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
       'finger_forward': '地支指诀',
       'wuxing_sheng': '五行相生',
       'wuxing_ke': '五行相克',
+      'gua_to_xiang': '六十四卦',
+      'xiang_to_gua': '六十四卦',
     };
     return typeMap[questionType] ?? questionType;
   }

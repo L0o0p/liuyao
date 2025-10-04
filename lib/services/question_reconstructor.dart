@@ -3,6 +3,7 @@ import '../models/wrong_question_record.dart';
 import 'rule_functions.dart';
 import '../data/tian_gan.dart';
 import '../data/di_zhi.dart';
+import '../data/gua_data.dart';
 
 /// 题目重建器
 /// 核心设计：从错题记录（questionType + input）重建完整题目对象
@@ -86,6 +87,12 @@ class QuestionReconstructor {
       // 长生相关
       case 'changsheng':
         return _buildChangShengQuestion(input);
+
+      // 六十四卦相关
+      case 'gua_to_xiang':
+        return _buildGuaToXiangQuestion(input);
+      case 'xiang_to_gua':
+        return _buildXiangToGuaQuestion(input);
 
       default:
         throw Exception('Unknown question type: $type');
@@ -463,6 +470,50 @@ class QuestionReconstructor {
     );
   }
 
+  // ========== 六十四卦题目重建函数 ==========
+
+  /// 重建卦名到卦象题目
+  /// input 格式：卦名（如"大有"）
+  static Question _buildGuaToXiangQuestion(String guaName) {
+    final correctXiang = getGuaXiang(guaName)!;
+
+    // 生成错误选项：从其他卦象中随机选择
+    final allXiang = getAllGuaXiang();
+    final wrongOptions = List<String>.from(allXiang)..remove(correctXiang);
+    wrongOptions.shuffle();
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correctXiang, ...wrongOptions.take(3)];
+    options.shuffle();
+
+    return Question(
+      text: "卦「$guaName」的卦象是哪个？",
+      options: options,
+      correctAnswer: correctXiang,
+    );
+  }
+
+  /// 重建卦象到卦名题目
+  /// input 格式：卦象（如"火天"）
+  static Question _buildXiangToGuaQuestion(String guaXiang) {
+    final correctGua = getGuaName(guaXiang)!;
+
+    // 生成错误选项：从其他卦名中随机选择
+    final allGuaNames = getAllGuaNames();
+    final wrongOptions = List<String>.from(allGuaNames)..remove(correctGua);
+    wrongOptions.shuffle();
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correctGua, ...wrongOptions.take(3)];
+    options.shuffle();
+
+    return Question(
+      text: "卦象「$guaXiang」对应的卦名是哪个？",
+      options: options,
+      correctAnswer: correctGua,
+    );
+  }
+
   /// 根据题目内容推断题目类型和输入参数
   /// 用于在答题时自动识别题目类型并记录错题
   /// @param question 题目对象
@@ -585,6 +636,22 @@ class QuestionReconstructor {
         if (text.startsWith(wx)) {
           return {'questionType': 'wuxing_ke', 'input': wx};
         }
+      }
+    }
+
+    // 六十四卦：卦名到卦象
+    if (text.contains('的卦象是哪个？')) {
+      final match = RegExp(r'卦「(.+)」的卦象是哪个？').firstMatch(text);
+      if (match != null) {
+        return {'questionType': 'gua_to_xiang', 'input': match.group(1)!};
+      }
+    }
+
+    // 六十四卦：卦象到卦名
+    if (text.contains('对应的卦名是哪个？')) {
+      final match = RegExp(r'卦象「(.+)」对应的卦名是哪个？').firstMatch(text);
+      if (match != null) {
+        return {'questionType': 'xiang_to_gua', 'input': match.group(1)!};
       }
     }
 
