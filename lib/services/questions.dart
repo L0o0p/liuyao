@@ -72,10 +72,17 @@ class Questions {
   /// 六合题目生成器
   static Question generateLiuHeQuestion() {
     final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final List<String> diZhiNames = diZhi.map((item) => item["name"]!).toList();
     final correct = getLiuHe(zhi);
 
-    final options = diZhiNames;
+    // 生成错误选项：从其他地支中随机选择3个
+    final allDiZhiNames = diZhi.map((item) => item["name"]!).toList();
+    final wrongOptions = List<String>.from(allDiZhiNames)..remove(correct);
+    wrongOptions.shuffle(_rnd);
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correct, ...wrongOptions.take(3)];
+    options.shuffle(_rnd);
+
     return Question(
       text: "谁和$zhi 六合？",
       options: options,
@@ -88,19 +95,42 @@ class Questions {
     // 随机抽一个三合组合作为正确答案
     final correctGroup = sanHe[_rnd.nextInt(sanHe.length)];
 
-    // 复制一份list并打乱，去掉正确答案
-    final otherGroups = List<List<String>>.from(sanHe)..remove(correctGroup);
-    otherGroups.shuffle(_rnd);
+    // 生成三个错误选项，每个都是随机选择3个地支的组合
+    final allZhi = diZhi.map((d) => d["name"]!).toList();
+    final List<List<String>> wrongGroups = [];
 
-    // 从剩下的组选 3 个当错误答案
-    final wrongGroups = otherGroups.take(3).toList();
+    // 生成3个错误选项
+    for (int i = 0; i < 3; i++) {
+      List<String> wrongGroup;
+      bool isDuplicate;
+      int tryCount = 0;
 
-    // 把正确组和错误组合并
-    final allGroups = [correctGroup, ...wrongGroups];
-    allGroups.shuffle(_rnd); // 打乱顺序
+      do {
+        // 随机选择3个地支组成错误选项
+        final List<String> candidate = List<String>.from(allZhi)..shuffle(_rnd);
+        wrongGroup = candidate.take(3).toList();
 
-    // 把每个组合拼成字符串作为选项
-    final options = allGroups.map((group) => group.join(" ")).toList();
+        // 检查是否与任何真实三合组合重复（顺序无关）
+        final wrongSet = wrongGroup.toSet();
+        isDuplicate = sanHe.any((realGroup) {
+          final realSet = realGroup.toSet();
+          return wrongSet.difference(realSet).isEmpty &&
+              realSet.difference(wrongSet).isEmpty;
+        });
+
+        tryCount++;
+        // 防止死循环，最多尝试50次
+        if (tryCount > 50) break;
+      } while (isDuplicate);
+
+      wrongGroups.add(wrongGroup);
+    }
+
+    // 合并所有选项
+    final allGroups = [correctGroup, ...wrongGroups]..shuffle(_rnd);
+
+    // 把每个组合拼成字符串
+    final options = allGroups.map((g) => g.join(" ")).toList();
 
     return Question(
       text: "以下哪个是三合组合？",
@@ -111,19 +141,42 @@ class Questions {
 
   /// 三刑题目生成器
   static Question generateSanXingQuestion() {
-    // 过滤掉长度小于3的（只要三刑组合）
-    final sanXingGroups = sanXing.where((g) => g.length >= 3).toList();
+    // 不再过滤三刑组合，直接使用全部三刑数据
+    final sanXingGroups = sanXing;
 
     // 随机抽一个三刑组合作为正确答案
     final correctGroup = sanXingGroups[_rnd.nextInt(sanXingGroups.length)];
 
-    // 复制并打乱，去掉正确答案
-    final otherGroups = List<List<String>>.from(sanXingGroups)
-      ..remove(correctGroup);
-    otherGroups.shuffle(_rnd);
+    // 生成三个错误选项，每个都是随机选择3个地支的组合
+    final allZhi = diZhi.map((d) => d["name"]!).toList();
+    final List<List<String>> wrongGroups = [];
 
-    // 随机拿三个错误答案
-    final wrongGroups = otherGroups.take(3).toList();
+    // 生成3个错误选项
+    for (int i = 0; i < 3; i++) {
+      List<String> wrongGroup;
+      bool isDuplicate;
+      int tryCount = 0;
+
+      do {
+        // 随机选择3个地支组成错误选项
+        final List<String> candidate = List<String>.from(allZhi)..shuffle(_rnd);
+        wrongGroup = candidate.take(3).toList();
+
+        // 检查是否与任何真实三刑组合重复（顺序无关）
+        final wrongSet = wrongGroup.toSet();
+        isDuplicate = sanXing.any((realGroup) {
+          final realSet = realGroup.toSet();
+          return wrongSet.difference(realSet).isEmpty &&
+              realSet.difference(wrongSet).isEmpty;
+        });
+
+        tryCount++;
+        // 防止死循环，最多尝试50次
+        if (tryCount > 50) break;
+      } while (isDuplicate);
+
+      wrongGroups.add(wrongGroup);
+    }
 
     // 合并所有选项
     final allGroups = [correctGroup, ...wrongGroups]..shuffle(_rnd);

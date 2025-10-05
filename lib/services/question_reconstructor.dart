@@ -269,10 +269,19 @@ class QuestionReconstructor {
 
   static Question _buildLiuHeQuestion(String zhi) {
     final correct = getLiuHe(zhi);
-    final diZhiNames = diZhi.map((item) => item["name"]!).toList();
+
+    // 生成错误选项：从其他地支中随机选择3个
+    final allDiZhiNames = diZhi.map((item) => item["name"]!).toList();
+    final wrongOptions = List<String>.from(allDiZhiNames)..remove(correct);
+    wrongOptions.shuffle();
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correct, ...wrongOptions.take(3)];
+    options.shuffle();
+
     return Question(
       text: "谁和$zhi 六合？",
-      options: diZhiNames,
+      options: options,
       correctAnswer: correct,
     );
   }
@@ -328,10 +337,19 @@ class QuestionReconstructor {
     ];
     final index = diZhiCycle.indexOf(zhi);
     final correct = diZhiCycle[(index + 6) % 12];
-    final diZhiNames = diZhi.map((item) => item["name"]!).toList();
+
+    // 生成错误选项：从其他地支中随机选择3个
+    final allDiZhiNames = diZhi.map((item) => item["name"]!).toList();
+    final wrongOptions = List<String>.from(allDiZhiNames)..remove(correct);
+    wrongOptions.shuffle();
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correct, ...wrongOptions.take(3)];
+    options.shuffle();
+
     return Question(
       text: "谁和$zhi 六冲？",
-      options: diZhiNames,
+      options: options,
       correctAnswer: correct,
     );
   }
@@ -353,10 +371,19 @@ class QuestionReconstructor {
       "亥": "申",
     };
     final correct = liuHaiMap[zhi] ?? "未知";
-    final diZhiNames = diZhi.map((item) => item["name"]!).toList();
+
+    // 生成错误选项：从其他地支中随机选择3个
+    final allDiZhiNames = diZhi.map((item) => item["name"]!).toList();
+    final wrongOptions = List<String>.from(allDiZhiNames)..remove(correct);
+    wrongOptions.shuffle();
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correct, ...wrongOptions.take(3)];
+    options.shuffle();
+
     return Question(
       text: "谁和$zhi 六害？",
-      options: diZhiNames,
+      options: options,
       correctAnswer: correct,
     );
   }
@@ -378,10 +405,19 @@ class QuestionReconstructor {
       "亥": "寅",
     };
     final correct = poXiangMap[zhi] ?? "未知";
-    final diZhiNames = diZhi.map((item) => item["name"]!).toList();
+
+    // 生成错误选项：从其他地支中随机选择3个
+    final allDiZhiNames = diZhi.map((item) => item["name"]!).toList();
+    final wrongOptions = List<String>.from(allDiZhiNames)..remove(correct);
+    wrongOptions.shuffle();
+
+    // 组合选项：正确答案 + 3个错误选项
+    final options = [correct, ...wrongOptions.take(3)];
+    options.shuffle();
+
     return Question(
       text: "谁和$zhi 相破？",
-      options: diZhiNames,
+      options: options,
       correctAnswer: correct,
     );
   }

@@ -25,7 +25,19 @@ String getZhiWuXing(String zhi) {
 }
 
 String getLiuHe(String zhi) {
-  return liuHe[zhi] ?? "无六合";
+  // 先尝试正向查找
+  if (liuHe.containsKey(zhi)) {
+    return liuHe[zhi]!;
+  }
+
+  // 如果正向查找失败，尝试反向查找
+  for (final entry in liuHe.entries) {
+    if (entry.value == zhi) {
+      return entry.key;
+    }
+  }
+
+  return "无六合";
 }
 
 List<String> getSanHe(String zhi) {
