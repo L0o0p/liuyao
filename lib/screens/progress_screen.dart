@@ -189,6 +189,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final stats = _calculateOverallStats();
 
     return Scaffold(
+      appBar: AppBar(title: const Text("学习进度"), centerTitle: true),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

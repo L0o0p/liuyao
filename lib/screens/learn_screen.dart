@@ -8,7 +8,7 @@ class LearnScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(title: const Text("选择学习板块"), centerTitle: true),
+      appBar: AppBar(title: const Text("六爻基础"), centerTitle: true),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0), // 减少边距以适应小屏幕
@@ -53,7 +53,7 @@ class LearnScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       _buildModuleButton(
                         context,
-                        title: "六合三合六冲三害",
+                        title: "刑冲合害",
                         subtitle: "判断人事关系、事情走向的规则",
                         icon: Icons.compare_arrows,
                         onTap: () => _navigateToModule(context, 'hechong'),
