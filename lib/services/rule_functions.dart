@@ -86,6 +86,11 @@ String getGanTime(String gan) {
   return match["time"] ?? "未知";
 }
 
+String getGanHour(String gan) {
+  final match = tianGan.firstWhere((g) => g["name"] == gan, orElse: () => {});
+  return match["hour"] ?? "未知";
+}
+
 // 地支方位时间相关函数
 String getZhiDirection(String zhi) {
   final match = diZhi.firstWhere((g) => g["name"] == zhi, orElse: () => {});

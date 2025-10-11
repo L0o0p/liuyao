@@ -363,22 +363,10 @@ class Questions {
   /// 天干时辰题目生成器
   static Question generateGanTimeQuestion() {
     final gan = tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
-    final correct = getGanTime(gan);
+    final correct = getGanHour(gan);
 
-    final allTimes = [
-      "子时",
-      "丑时",
-      "寅时",
-      "卯时",
-      "辰时",
-      "巳时",
-      "午时",
-      "未时",
-      "申时",
-      "酉时",
-      "戌时",
-      "亥时",
-    ];
+    // 从天干数据中提取所有 time 字段作为选项
+    final allTimes = tianGan.map((g) => g["hour"]!).toList();
     // 移除正确答案，然后随机选择3个错误选项
     final wrongTimes = List<String>.from(allTimes)..remove(correct);
     wrongTimes.shuffle(_rnd);
@@ -396,22 +384,10 @@ class Questions {
   /// 地支时辰题目生成器
   static Question generateZhiTimeQuestion() {
     final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiTime(zhi);
+    final correct = getZhiHour(zhi);
 
-    final allTimes = [
-      "子时",
-      "丑时",
-      "寅时",
-      "卯时",
-      "辰时",
-      "巳时",
-      "午时",
-      "未时",
-      "申时",
-      "酉时",
-      "戌时",
-      "亥时",
-    ];
+    // 从地支数据中提取所有 time 字段作为选项
+    final allTimes = diZhi.map((d) => d["hour"]!).toList();
     // 移除正确答案，然后随机选择3个错误选项
     final wrongTimes = List<String>.from(allTimes)..remove(correct);
     wrongTimes.shuffle(_rnd);
@@ -431,20 +407,8 @@ class Questions {
     final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
     final correct = getZhiHour(zhi);
 
-    final allHours = [
-      "23-1",
-      "1-3",
-      "3-5",
-      "5-7",
-      "7-9",
-      "9-11",
-      "11-13",
-      "13-15",
-      "15-17",
-      "17-19",
-      "19-21",
-      "21-23",
-    ];
+    // 从地支数据中提取所有 hour 字段作为选项
+    final allHours = diZhi.map((d) => d["hour"]!).toList();
     // 移除正确答案，然后随机选择3个错误选项
     final wrongHours = List<String>.from(allHours)..remove(correct);
     wrongHours.shuffle(_rnd);

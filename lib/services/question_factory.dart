@@ -78,7 +78,7 @@ class QuestionFactory {
     // 题型生成器池子（仅时间相关）
     final generators = [
       Questions.generateGanTimeQuestion,
-      Questions.generateZhiTimeQuestion,
+      // Questions.generateZhiTimeQuestion,
       Questions.generateZhiHourQuestion,
     ];
 

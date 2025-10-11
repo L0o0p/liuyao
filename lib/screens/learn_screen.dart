@@ -15,14 +15,14 @@ class LearnScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                "六爻基础",
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24), // 减少间距
+              // Text(
+              //   "六爻基础",
+              //   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              //     fontWeight: FontWeight.bold,
+              //   ),
+              //   textAlign: TextAlign.center,
+              // ),
+              // const SizedBox(height: 24), // 减少间距
               Expanded(
                 child: SingleChildScrollView(
                   // 添加滚动支持
