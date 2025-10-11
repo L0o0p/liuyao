@@ -47,6 +47,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.10
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -108,3 +109,20 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/icon.png"
+
+# 启动屏幕配置
+flutter_native_splash:
+  color: "#F5F0E8"  # 米白色背景，与图片风格匹配
+  image: assets/splash.png
+  
+  android: true
+  ios: true
+  web: false
+  
+  # Android 12+ 配置
+  android_12:
+    image: assets/splash.png
+    color: "#F5F0E8"
+  
+  # 全屏模式
+  fullscreen: true
