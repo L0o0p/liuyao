@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'screens/learn_screen.dart';
 import 'screens/review_screen.dart';
 import 'screens/progress_screen.dart';
+import 'services/storage_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化存储服务
+  await StorageService.initialize();
+
   runApp(const MyApp());
 }
 

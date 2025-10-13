@@ -8,6 +8,10 @@ import UIKit
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+    
+    // 注册 CloudKit 插件
+    CloudKitPlugin.register(with: self.registrar(forPlugin: "CloudKitPlugin")!)
+    
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

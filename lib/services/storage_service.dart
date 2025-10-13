@@ -1,26 +1,71 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../models/module_progress.dart';
 import '../models/wrong_question_record.dart';
+import 'cloudkit_storage_service.dart';
+import 'apple_auth_service.dart';
 
-/// 本地存储服务
+/// 混合存储服务
 /// 负责管理用户学习进度和错题记录的持久化存储
-/// 使用 SharedPreferences 作为存储引擎
+/// 支持本地存储（SharedPreferences）和云端同步（CloudKit）
 ///
 /// 设计思路：
 /// 1. 学习进度：按模块ID存储（module_progress_xxx）
 /// 2. 错题记录：统一存储所有错题（wrong_questions）
+/// 3. 云端同步：如果用户已登录 Apple ID，自动同步到 CloudKit
+/// 4. 离线优先：本地存储为主，云端同步为辅
 class StorageService {
   static const String _keyPrefix = 'module_progress_';
   static const String _wrongQuestionsKey = 'wrong_questions';
+  static const String _lastSyncKey = 'last_sync_timestamp';
 
-  /// 保存模块进度到本地
+  static bool _isCloudKitEnabled = false;
+  static bool _isAppleSignedIn = false;
+
+  /// 初始化存储服务
+  /// 检查 Apple 登录状态和 CloudKit 可用性
+  static Future<void> initialize() async {
+    try {
+      _isAppleSignedIn = await AppleAuthService.isAppleSignInAvailable();
+      if (_isAppleSignedIn) {
+        _isCloudKitEnabled = await CloudKitStorageService.isCloudKitAvailable();
+      }
+
+      if (kDebugMode) {
+        print('StorageService 初始化完成:');
+        print('  Apple 登录可用: $_isAppleSignedIn');
+        print('  CloudKit 可用: $_isCloudKitEnabled');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('StorageService 初始化失败: $e');
+      }
+    }
+  }
+
+  /// 检查是否启用了云端同步
+  static bool get isCloudSyncEnabled => _isCloudKitEnabled && _isAppleSignedIn;
+
+  /// 保存模块进度到本地和云端
   /// @param progress 要保存的进度对象
   static Future<void> saveProgress(ModuleProgress progress) async {
+    // 首先保存到本地
     final prefs = await SharedPreferences.getInstance();
     final key = _keyPrefix + progress.moduleId;
     final jsonString = jsonEncode(progress.toJson());
     await prefs.setString(key, jsonString);
+
+    // 如果启用了云端同步，同时保存到 CloudKit
+    if (isCloudSyncEnabled) {
+      try {
+        await CloudKitStorageService.saveModuleProgress(progress);
+      } catch (e) {
+        if (kDebugMode) {
+          print('CloudKit 同步失败，但本地保存成功: $e');
+        }
+      }
+    }
   }
 
   /// 从本地加载模块进度
@@ -79,6 +124,7 @@ class StorageService {
   /// 设计原理：
   /// - 如果该题已存在错题记录 → 增加错误次数
   /// - 如果是新错题 → 创建新记录
+  /// - 同时同步到 CloudKit（如果可用）
   ///
   /// @param record 错题记录
   static Future<void> recordWrongQuestion(WrongQuestionRecord record) async {
@@ -89,15 +135,29 @@ class StorageService {
       (r) => r.uniqueId == record.uniqueId,
     );
 
+    WrongQuestionRecord recordToSync = record;
     if (existingIndex != -1) {
       // 已存在，更新错误次数
       allRecords[existingIndex].incrementWrongCount(record.userAnswer);
+      recordToSync = allRecords[existingIndex];
     } else {
       // 新错题，添加到列表
       allRecords.add(record);
     }
 
+    // 保存到本地
     await _saveWrongQuestions(allRecords);
+
+    // 如果启用了云端同步，同时保存到 CloudKit
+    if (isCloudSyncEnabled) {
+      try {
+        await CloudKitStorageService.saveWrongQuestion(recordToSync);
+      } catch (e) {
+        if (kDebugMode) {
+          print('CloudKit 错题同步失败，但本地保存成功: $e');
+        }
+      }
+    }
   }
 
   /// 加载所有错题记录
@@ -212,5 +272,158 @@ class StorageService {
     final jsonList = records.map((r) => r.toJson()).toList();
     final jsonString = jsonEncode(jsonList);
     await prefs.setString(_wrongQuestionsKey, jsonString);
+  }
+
+  // ========== 云端同步功能 ==========
+
+  /// 启用 Apple 登录和 CloudKit 同步
+  /// @return 登录成功返回 true，失败返回 false
+  static Future<bool> enableCloudSync() async {
+    try {
+      final credential = await AppleAuthService.signInWithApple();
+      if (credential != null) {
+        _isAppleSignedIn = true;
+        _isCloudKitEnabled = await CloudKitStorageService.isCloudKitAvailable();
+
+        if (_isCloudKitEnabled) {
+          // 登录成功后，尝试同步数据
+          await syncToCloud();
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        print('启用云端同步失败: $e');
+      }
+      return false;
+    }
+  }
+
+  /// 手动同步本地数据到云端
+  static Future<void> syncToCloud() async {
+    if (!isCloudSyncEnabled) {
+      if (kDebugMode) {
+        print('云端同步未启用，跳过同步');
+      }
+      return;
+    }
+
+    try {
+      // 同步所有模块进度
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys();
+
+      for (final key in keys) {
+        if (key.startsWith(_keyPrefix)) {
+          final jsonString = prefs.getString(key);
+          if (jsonString != null) {
+            try {
+              final json = jsonDecode(jsonString) as Map<String, dynamic>;
+              final progress = ModuleProgress.fromJson(json);
+              await CloudKitStorageService.saveModuleProgress(progress);
+            } catch (e) {
+              if (kDebugMode) {
+                print('同步模块进度失败 $key: $e');
+              }
+            }
+          }
+        }
+      }
+
+      // 同步错题记录
+      final wrongQuestions = await loadWrongQuestions();
+      for (final record in wrongQuestions) {
+        try {
+          await CloudKitStorageService.saveWrongQuestion(record);
+        } catch (e) {
+          if (kDebugMode) {
+            print('同步错题记录失败: $e');
+          }
+        }
+      }
+
+      // 更新最后同步时间
+      await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
+
+      if (kDebugMode) {
+        print('✅ 云端同步完成');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ 云端同步失败: $e');
+      }
+    }
+  }
+
+  /// 从云端同步数据到本地
+  static Future<void> syncFromCloud() async {
+    if (!isCloudSyncEnabled) {
+      if (kDebugMode) {
+        print('云端同步未启用，跳过同步');
+      }
+      return;
+    }
+
+    try {
+      // 从云端获取模块进度
+      final cloudProgress = await CloudKitStorageService.fetchModuleProgress();
+      for (final progress in cloudProgress) {
+        await saveProgress(progress);
+      }
+
+      // 从云端获取错题记录
+      final cloudWrongQuestions =
+          await CloudKitStorageService.fetchWrongQuestions();
+      if (cloudWrongQuestions.isNotEmpty) {
+        final localRecords = await loadWrongQuestions();
+
+        // 合并云端和本地的错题记录
+        final mergedRecords = <String, WrongQuestionRecord>{};
+
+        // 先添加本地记录
+        for (final record in localRecords) {
+          mergedRecords[record.uniqueId] = record;
+        }
+
+        // 再添加云端记录，如果有冲突则保留最新的
+        for (final record in cloudWrongQuestions) {
+          final existing = mergedRecords[record.uniqueId];
+          if (existing == null ||
+              record.lastWrongTime.isAfter(existing.lastWrongTime)) {
+            mergedRecords[record.uniqueId] = record;
+          }
+        }
+
+        await _saveWrongQuestions(mergedRecords.values.toList());
+      }
+
+      // 更新最后同步时间
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
+
+      if (kDebugMode) {
+        print('✅ 从云端同步完成');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ 从云端同步失败: $e');
+      }
+    }
+  }
+
+  /// 获取最后同步时间
+  static Future<DateTime?> getLastSyncTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final timestamp = prefs.getInt(_lastSyncKey);
+    return timestamp != null
+        ? DateTime.fromMillisecondsSinceEpoch(timestamp)
+        : null;
+  }
+
+  /// 禁用云端同步
+  static void disableCloudSync() {
+    _isAppleSignedIn = false;
+    _isCloudKitEnabled = false;
   }
 }

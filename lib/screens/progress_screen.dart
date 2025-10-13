@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/module_progress.dart';
 import '../services/storage_service.dart';
+import '../widgets/apple_sign_in_button.dart';
 import 'study_module_screen.dart';
 
 /// 进度页面
@@ -193,6 +194,95 @@ class _ProgressScreenState extends State<ProgressScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
+            // 云端同步区域
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.cloud,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '云端同步',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const Spacer(),
+                            const CloudSyncIndicator(),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (!StorageService.isCloudSyncEnabled) ...[
+                          const Text(
+                            '登录 Apple ID 即可将学习进度同步到云端，在多个设备间保持数据一致。',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          const SizedBox(height: 12),
+                          AppleSignInButton(
+                            onSignInSuccess: () {
+                              setState(() {
+                                // 刷新页面状态
+                              });
+                              _loadAllProgress();
+                            },
+                          ),
+                        ] else ...[
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  '已启用云端同步，您的学习进度会自动保存到云端。',
+                                  style: TextStyle(color: Colors.green),
+                                ),
+                              ),
+                              const SyncButton(),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          FutureBuilder<DateTime?>(
+                            future: StorageService.getLastSyncTime(),
+                            builder: (context, snapshot) {
+                              final lastSync = snapshot.data;
+                              if (lastSync != null) {
+                                final now = DateTime.now();
+                                final diff = now.difference(lastSync);
+                                String timeAgo;
+                                if (diff.inMinutes < 1) {
+                                  timeAgo = '刚刚';
+                                } else if (diff.inHours < 1) {
+                                  timeAgo = '${diff.inMinutes}分钟前';
+                                } else if (diff.inDays < 1) {
+                                  timeAgo = '${diff.inHours}小时前';
+                                } else {
+                                  timeAgo = '${diff.inDays}天前';
+                                }
+                                return Text(
+                                  '最后同步: $timeAgo',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
             // 总体统计卡片
             SliverToBoxAdapter(
               child: Padding(
