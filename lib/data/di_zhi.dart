@@ -8,7 +8,7 @@ const List<Map<String, String>> diZhi = [
     "month": "十一月",
     "time": "子时",
     "hour": "23-1",
-    "fingerJoint": "无名指根部",
+    "fingerJoint": "无名指 - 根部",
   },
   {
     "name": "丑",
@@ -19,7 +19,7 @@ const List<Map<String, String>> diZhi = [
     "month": "十二月",
     "time": "丑时",
     "hour": "1-3",
-    "fingerJoint": "无名指第二节",
+    "fingerJoint": "中指 - 第二节",
   },
   {
     "name": "寅",
@@ -30,7 +30,7 @@ const List<Map<String, String>> diZhi = [
     "month": "正月",
     "time": "寅时",
     "hour": "3-5",
-    "fingerJoint": "无名指第三节",
+    "fingerJoint": "食指 - 根部",
   },
   {
     "name": "卯",
@@ -41,7 +41,7 @@ const List<Map<String, String>> diZhi = [
     "month": "二月",
     "time": "卯时",
     "hour": "5-7",
-    "fingerJoint": "无名指指尖",
+    "fingerJoint": "食指 - 第一节",
   },
   {
     "name": "辰",
@@ -52,7 +52,7 @@ const List<Map<String, String>> diZhi = [
     "month": "三月",
     "time": "辰时",
     "hour": "7-9",
-    "fingerJoint": "中指指尖",
+    "fingerJoint": "食指 - 第二节",
   },
   {
     "name": "巳",
@@ -63,7 +63,7 @@ const List<Map<String, String>> diZhi = [
     "month": "四月",
     "time": "巳时",
     "hour": "9-11",
-    "fingerJoint": "中指第三节",
+    "fingerJoint": "食指 - 指尖",
   },
   {
     "name": "午",
@@ -74,7 +74,7 @@ const List<Map<String, String>> diZhi = [
     "month": "五月",
     "time": "午时",
     "hour": "11-13",
-    "fingerJoint": "中指第二节",
+    "fingerJoint": "中指 - 指尖",
   },
   {
     "name": "未",
@@ -85,7 +85,7 @@ const List<Map<String, String>> diZhi = [
     "month": "六月",
     "time": "未时",
     "hour": "13-15",
-    "fingerJoint": "中指根部",
+    "fingerJoint": "无名指 - 指尖",
   },
   {
     "name": "申",
@@ -96,7 +96,7 @@ const List<Map<String, String>> diZhi = [
     "month": "七月",
     "time": "申时",
     "hour": "15-17",
-    "fingerJoint": "食指根部",
+    "fingerJoint": "小指 - 指尖",
   },
   {
     "name": "酉",
@@ -107,7 +107,7 @@ const List<Map<String, String>> diZhi = [
     "month": "八月",
     "time": "酉时",
     "hour": "17-19",
-    "fingerJoint": "食指第二节",
+    "fingerJoint": "小指 - 第二节",
   },
   {
     "name": "戌",
@@ -118,7 +118,7 @@ const List<Map<String, String>> diZhi = [
     "month": "九月",
     "time": "戌时",
     "hour": "19-21",
-    "fingerJoint": "食指第三节",
+    "fingerJoint": "小指 - 第一节",
   },
   {
     "name": "亥",
@@ -129,6 +129,6 @@ const List<Map<String, String>> diZhi = [
     "month": "十月",
     "time": "亥时",
     "hour": "21-23",
-    "fingerJoint": "食指指尖",
+    "fingerJoint": "小指 - 根部",
   },
 ];
