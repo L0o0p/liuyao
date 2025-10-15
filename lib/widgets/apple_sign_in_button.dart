@@ -26,12 +26,15 @@ class _AppleSignInButtonState extends State<AppleSignInButton> {
 
     try {
       final success = await StorageService.enableCloudSync();
-
+ 
       if (success) {
         if (mounted) {
+          final isCloudEnabled = StorageService.isCloudSyncEnabled;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Apple 登录成功，已启用云端同步'),
+            SnackBar(
+              content: Text(isCloudEnabled 
+                ? '✅ Apple 登录成功，已启用云端同步'
+                : '✅ Apple 登录成功，使用本地存储'),
               backgroundColor: Colors.green,
             ),
           );

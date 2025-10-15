@@ -150,6 +150,11 @@ class CloudKitStorageService {
       if (kDebugMode) {
         print('CloudKit 不可用: $e');
       }
+      // 如果是记录类型不存在的错误，也认为 CloudKit 不可用
+      if (e.toString().contains('Did not find record type') || 
+          e.toString().contains('not marked indexable')) {
+        return false;
+      }
       return false;
     }
   }

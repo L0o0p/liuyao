@@ -20,7 +20,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
                 return
             }
             
-            let record = CKRecord(recordType: "Progress")
+            let record = CKRecord(recordType: "UserProgress")
             record["word"] = word as NSString
             record["score"] = score as NSNumber
             record["timestamp"] = Date() as NSDate
@@ -36,13 +36,19 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             }
             
         case "fetchProgress":
-            let query = CKQuery(recordType: "Progress", predicate: NSPredicate(value: true))
+            let query = CKQuery(recordType: "UserProgress", predicate: NSPredicate(value: true))
             query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
             
             db.perform(query, inZoneWith: nil) { records, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        // 如果是记录类型不存在的错误，返回空数组而不是错误
+                        if error.localizedDescription.contains("not marked indexable") || 
+                           error.localizedDescription.contains("Did not find record type") {
+                            result([])
+                        } else {
+                            result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        }
                     } else {
                         let data = records?.map { record in
                             return [
@@ -66,7 +72,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
                 return
             }
             
-            let record = CKRecord(recordType: "ModuleProgress")
+            let record = CKRecord(recordType: "UserModuleProgress")
             record["moduleId"] = moduleId as NSString
             record["progress"] = progress as NSNumber
             record["completedQuestions"] = completedQuestions as NSNumber
@@ -84,13 +90,19 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             }
             
         case "fetchModuleProgress":
-            let query = CKQuery(recordType: "ModuleProgress", predicate: NSPredicate(value: true))
+            let query = CKQuery(recordType: "UserModuleProgress", predicate: NSPredicate(value: true))
             query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
             
             db.perform(query, inZoneWith: nil) { records, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        // 如果是记录类型不存在的错误，返回空数组而不是错误
+                        if error.localizedDescription.contains("not marked indexable") || 
+                           error.localizedDescription.contains("Did not find record type") {
+                            result([])
+                        } else {
+                            result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        }
                     } else {
                         let data = records?.map { record in
                             return [
@@ -116,7 +128,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
                 return
             }
             
-            let record = CKRecord(recordType: "WrongQuestion")
+            let record = CKRecord(recordType: "UserWrongQuestion")
             record["questionText"] = questionText as NSString
             record["correctAnswer"] = correctAnswer as NSString
             record["userAnswer"] = userAnswer as NSString
@@ -135,13 +147,19 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             }
             
         case "fetchWrongQuestions":
-            let query = CKQuery(recordType: "WrongQuestion", predicate: NSPredicate(value: true))
+            let query = CKQuery(recordType: "UserWrongQuestion", predicate: NSPredicate(value: true))
             query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
             
             db.perform(query, inZoneWith: nil) { records, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        // 如果是记录类型不存在的错误，返回空数组而不是错误
+                        if error.localizedDescription.contains("not marked indexable") || 
+                           error.localizedDescription.contains("Did not find record type") {
+                            result([])
+                        } else {
+                            result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        }
                     } else {
                         let data = records?.map { record in
                             return [
