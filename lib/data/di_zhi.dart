@@ -19,7 +19,7 @@ const List<Map<String, String>> diZhi = [
     "month": "十二月",
     "time": "丑时",
     "hour": "1-3",
-    "fingerJoint": "中指 - 第二节",
+    "fingerJoint": "中指 - 根部",
   },
   {
     "name": "寅",

@@ -45,13 +45,14 @@ List<String> getSanHe(String zhi) {
 }
 
 String getWuXingChangSheng(String riZhi, String yaoZhi) {
-  // 找出该爻地支的五行
-  final wuXing = zhiWuXing[yaoZhi] ?? "未知";
-  if (wuXing == "未知") return "未知";
+  // 找出日支的五行属性
+  final riWuXing = zhiWuXing[riZhi] ?? "未知";
+  if (riWuXing == "未知") return "未知";
 
-  // 找这个五行对应的长生起点日支
-  final startZhi = wuXingChangShengStart[wuXing]!;
-  // 起点索引
+  // 找这个五行对应的长生起点地支
+  final startZhi = wuXingChangShengStart[riWuXing]!;
+
+  // 起点索引和爻支索引
   final startIndex = diZhiCycle.indexOf(startZhi);
   final yaoIndex = diZhiCycle.indexOf(yaoZhi);
 
