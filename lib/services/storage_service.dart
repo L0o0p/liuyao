@@ -27,14 +27,21 @@ class StorageService {
   /// 检查 Apple 登录状态和 CloudKit 可用性
   static Future<void> initialize() async {
     try {
-      _isAppleSignedIn = await AppleAuthService.isAppleSignInAvailable();
+      // 检查设备是否支持Apple登录
+      final isAppleSignInAvailable =
+          await AppleAuthService.isAppleSignInAvailable();
+      // 检查用户是否已经登录
+      _isAppleSignedIn =
+          isAppleSignInAvailable && await AppleAuthService.isUserSignedIn();
+
       if (_isAppleSignedIn) {
         _isCloudKitEnabled = await CloudKitStorageService.isCloudKitAvailable();
       }
 
       if (kDebugMode) {
         print('StorageService 初始化完成:');
-        print('  Apple 登录可用: $_isAppleSignedIn');
+        print('  Apple 登录可用: $isAppleSignInAvailable');
+        print('  用户已登录: $_isAppleSignedIn');
         print('  CloudKit 可用: $_isCloudKitEnabled');
       }
     } catch (e) {
@@ -425,5 +432,16 @@ class StorageService {
   static void disableCloudSync() {
     _isAppleSignedIn = false;
     _isCloudKitEnabled = false;
+  }
+
+  /// 退出登录并禁用云端同步
+  static Future<void> signOut() async {
+    await AppleAuthService.signOut();
+    _isAppleSignedIn = false;
+    _isCloudKitEnabled = false;
+
+    if (kDebugMode) {
+      print('用户已退出登录，云端同步已禁用');
+    }
   }
 }
