@@ -42,7 +42,12 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             db.perform(query, inZoneWith: nil) { records, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        // 如果是记录类型不存在的错误，返回空数组而不是错误
+                        if error.localizedDescription.contains("Did not find record type") {
+                            result([])
+                        } else {
+                            result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        }
                     } else {
                         let data = records?.map { record in
                             return [
@@ -90,7 +95,12 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             db.perform(query, inZoneWith: nil) { records, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        // 如果是记录类型不存在的错误，返回空数组而不是错误
+                        if error.localizedDescription.contains("Did not find record type") {
+                            result([])
+                        } else {
+                            result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        }
                     } else {
                         let data = records?.map { record in
                             return [
@@ -141,7 +151,12 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             db.perform(query, inZoneWith: nil) { records, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        // 如果是记录类型不存在的错误，返回空数组而不是错误
+                        if error.localizedDescription.contains("Did not find record type") {
+                            result([])
+                        } else {
+                            result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
+                        }
                     } else {
                         let data = records?.map { record in
                             return [

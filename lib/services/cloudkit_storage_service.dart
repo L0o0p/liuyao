@@ -150,6 +150,16 @@ class CloudKitStorageService {
       if (kDebugMode) {
         print('CloudKit 不可用: $e');
       }
+      // 如果是记录类型不存在的错误，我们认为CloudKit是可用的，只是还没有数据
+      final errorMessage = e.toString().toLowerCase();
+      if (errorMessage.contains('did not find record type') ||
+          errorMessage.contains('record type') ||
+          errorMessage.contains('progress')) {
+        if (kDebugMode) {
+          print('CloudKit 可用，但记录类型尚未创建，这是正常的');
+        }
+        return true;
+      }
       return false;
     }
   }
