@@ -97,11 +97,12 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
+  remove_alpha_ios: true  # 移除iOS图标的alpha通道，符合App Store要求
   web:
     generate: true
     image_path: "assets/icon.png"
-    background_color: "#hexcode"
-    theme_color: "#hexcode"
+    background_color: "#F5F0E8"  # 米白色背景，与应用风格一致
+    theme_color: "#8B4513"  # 棕色主题色，与古钱币颜色匹配
   windows:
     generate: true
     image_path: "assets/icon.png"
