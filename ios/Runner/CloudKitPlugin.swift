@@ -60,7 +60,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
                 return
             }
             
-            let record = CKRecord(recordType: "UserProgress")
+            let record = CKRecord(recordType: "Progress")
             record["word"] = word as NSString
             record["score"] = score as NSNumber
             record["timestamp"] = Date() as NSDate
@@ -95,7 +95,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             
         case "fetchProgress":
             // 使用简单查询避免索引问题
-            let query = CKQuery(recordType: "UserProgress", predicate: NSPredicate(value: true))
+            let query = CKQuery(recordType: "Progress", predicate: NSPredicate(value: true))
             // 暂时移除排序以避免索引问题
             // query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
             
@@ -223,7 +223,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
                 return
             }
             
-            let record = CKRecord(recordType: "UserWrongQuestion")
+            let record = CKRecord(recordType: "WrongQuestion")
             record["questionText"] = questionText as NSString
             record["correctAnswer"] = correctAnswer as NSString
             record["userAnswer"] = userAnswer as NSString
@@ -260,7 +260,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             }
             
         case "fetchWrongQuestions":
-            let query = CKQuery(recordType: "UserWrongQuestion", predicate: NSPredicate(value: true))
+            let query = CKQuery(recordType: "WrongQuestion", predicate: NSPredicate(value: true))
             // 暂时移除排序以避免索引问题
             // query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
             
@@ -346,7 +346,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             }
             
             // 3. 尝试查询每种记录类型的数量
-            let recordTypes = ["UserProgress", "UserWrongQuestion", "ModuleProgress"]
+            let recordTypes = ["Progress", "WrongQuestion", "ModuleProgress"]
             for recordType in recordTypes {
                 let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
                 self.db.perform(query, inZoneWith: nil) { records, error in
