@@ -95,7 +95,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             
         case "fetchProgress":
             // 使用简单查询避免索引问题
-            let query = CKQuery(recordType: "Progress", predicate: NSPredicate(value: true))
+            let query = CKQuery(recordType: "UserProgress", predicate: NSPredicate(value: true))
             // 暂时移除排序以避免索引问题
             // query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
             
@@ -260,7 +260,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             }
             
         case "fetchWrongQuestions":
-            let query = CKQuery(recordType: "WrongQuestion", predicate: NSPredicate(value: true))
+            let query = CKQuery(recordType: "UserWrongQuestion", predicate: NSPredicate(value: true))
             // 暂时移除排序以避免索引问题
             // query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
             
@@ -346,7 +346,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             }
             
             // 3. 尝试查询每种记录类型的数量
-            let recordTypes = ["Progress", "WrongQuestion", "ModuleProgress"]
+            let recordTypes = ["UserProgress", "UserWrongQuestion", "ModuleProgress"]
             for recordType in recordTypes {
                 let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
                 self.db.perform(query, inZoneWith: nil) { records, error in
