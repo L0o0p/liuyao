@@ -228,10 +228,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           const SizedBox(height: 12),
                           AppleSignInButton(
                             onSignInSuccess: () {
-                              setState(() {
-                                // 刷新页面状态
-                              });
-                              _loadAllProgress();
+                              if (mounted) {
+                                setState(() {
+                                  // 刷新页面状态，这会触发整个页面重新构建
+                                });
+                                _loadAllProgress();
+                              }
+                            },
+                            onSignOut: () {
+                              if (mounted) {
+                                setState(() {
+                                  // 刷新页面状态，显示登录按钮
+                                });
+                              }
                             },
                           ),
                         ] else ...[
@@ -245,6 +254,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               ),
                               const SyncButton(),
                             ],
+                          ),
+                          const SizedBox(height: 8),
+                          AppleSignInButton(
+                            onSignOut: () {
+                              if (mounted) {
+                                setState(() {
+                                  // 刷新页面状态，显示登录按钮
+                                });
+                              }
+                            },
                           ),
                           const SizedBox(height: 8),
                           FutureBuilder<DateTime?>(
