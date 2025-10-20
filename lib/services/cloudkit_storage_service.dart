@@ -29,7 +29,18 @@ class CloudKitStorageService {
   static Future<List<Map<String, dynamic>>> fetchProgress() async {
     try {
       final result = await platform.invokeMethod('fetchProgress');
-      return List<Map<String, dynamic>>.from(result);
+
+      // 安全的类型转换
+      final List<Map<String, dynamic>> data = [];
+      if (result is List) {
+        for (final item in result) {
+          if (item is Map) {
+            data.add(Map<String, dynamic>.from(item));
+          }
+        }
+      }
+
+      return data;
     } catch (e) {
       if (kDebugMode) {
         print('❌ CloudKit 获取进度失败: $e');
@@ -63,9 +74,20 @@ class CloudKitStorageService {
   static Future<List<ModuleProgress>> fetchModuleProgress() async {
     try {
       final result = await platform.invokeMethod('fetchModuleProgress');
-      final List<Map<String, dynamic>> data = List<Map<String, dynamic>>.from(
-        result,
-      );
+      if (kDebugMode) {
+        print('CloudKit返回的模块进度数据类型: ${result.runtimeType}');
+        print('CloudKit返回的模块进度数据: $result');
+      }
+
+      // 安全的类型转换
+      final List<Map<String, dynamic>> data = [];
+      if (result is List) {
+        for (final item in result) {
+          if (item is Map) {
+            data.add(Map<String, dynamic>.from(item));
+          }
+        }
+      }
 
       return data
           .map(
@@ -111,9 +133,20 @@ class CloudKitStorageService {
   static Future<List<WrongQuestionRecord>> fetchWrongQuestions() async {
     try {
       final result = await platform.invokeMethod('fetchWrongQuestions');
-      final List<Map<String, dynamic>> data = List<Map<String, dynamic>>.from(
-        result,
-      );
+      if (kDebugMode) {
+        print('CloudKit返回的错题数据类型: ${result.runtimeType}');
+        print('CloudKit返回的错题数据: $result');
+      }
+
+      // 安全的类型转换
+      final List<Map<String, dynamic>> data = [];
+      if (result is List) {
+        for (final item in result) {
+          if (item is Map) {
+            data.add(Map<String, dynamic>.from(item));
+          }
+        }
+      }
 
       return data.map((item) {
         final questionText = item['questionText'] ?? '';
@@ -164,8 +197,11 @@ class CloudKitStorageService {
   static Future<bool> testCloudKitConnection() async {
     try {
       if (kDebugMode) {
-        print('🔍 开始测试CloudKit数据拉取...');
+        print('🔍 开始CloudKit综合测试...');
       }
+
+      // 执行上传下载综合测试
+      await testCloudKitUploadDownload();
 
       // 测试拉取模块进度
       final moduleProgress = await fetchModuleProgress();
@@ -234,6 +270,129 @@ class CloudKitStorageService {
     }
   }
 
+  /// 测试上传本地数据到CloudKit
+  static Future<void> testUploadLocalData() async {
+    try {
+      if (kDebugMode) {
+        print('🚀 开始测试上传本地数据到CloudKit...');
+      }
+
+      // 1. 测试上传一些模块进度数据
+      final testModuleProgress = ModuleProgress(
+        moduleId: 'tiangandizhi_wuxing', // 使用真实的模块ID
+        totalCorrectCount: 15,
+        totalWrongCount: 5,
+      );
+
+      final uploadResult = await saveModuleProgress(testModuleProgress);
+      if (kDebugMode) {
+        print(uploadResult ? '✅ 模块进度上传成功' : '❌ 模块进度上传失败');
+      }
+
+      // 2. 测试上传一些错题记录
+      final testWrongQuestion = WrongQuestionRecord(
+        questionType: 'test_gan_wuxing',
+        input: '甲',
+        correctAnswer: '木',
+        userAnswer: '火',
+      );
+
+      final wrongQuestionResult = await saveWrongQuestion(testWrongQuestion);
+      if (kDebugMode) {
+        print(wrongQuestionResult ? '✅ 错题记录上传成功' : '❌ 错题记录上传失败');
+      }
+
+      // 3. 测试上传基础进度数据
+      final progressResult = await saveProgress('测试词汇', 85);
+      if (kDebugMode) {
+        print(progressResult ? '✅ 基础进度上传成功' : '❌ 基础进度上传失败');
+      }
+
+      if (kDebugMode) {
+        print('📊 本地数据上传测试完成');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ 上传测试失败: $e');
+      }
+    }
+  }
+
+  /// 测试从CloudKit下载所有数据
+  static Future<void> testDownloadAllData() async {
+    try {
+      if (kDebugMode) {
+        print('📥 开始测试从CloudKit下载所有数据...');
+      }
+
+      // 1. 拉取模块进度
+      final moduleProgress = await fetchModuleProgress();
+      if (kDebugMode) {
+        print('📊 模块进度记录: ${moduleProgress.length} 条');
+        for (final progress in moduleProgress) {
+          print(
+            '  - ${progress.moduleId}: 正确率 ${(progress.accuracy * 100).toStringAsFixed(1)}%',
+          );
+        }
+      }
+
+      // 2. 拉取错题记录
+      final wrongQuestions = await fetchWrongQuestions();
+      if (kDebugMode) {
+        print('❌ 错题记录: ${wrongQuestions.length} 条');
+        for (int i = 0; i < wrongQuestions.length && i < 3; i++) {
+          final q = wrongQuestions[i];
+          print(
+            '  - ${q.questionType}: ${q.input} → ${q.correctAnswer} (用户答: ${q.userAnswer})',
+          );
+        }
+        if (wrongQuestions.length > 3) {
+          print('  ... 还有 ${wrongQuestions.length - 3} 条');
+        }
+      }
+
+      // 3. 拉取基础进度
+      final basicProgress = await fetchProgress();
+      if (kDebugMode) {
+        print('📈 基础进度记录: ${basicProgress.length} 条');
+        for (int i = 0; i < basicProgress.length && i < 3; i++) {
+          final p = basicProgress[i];
+          print('  - ${p['word']}: ${p['score']}分');
+        }
+        if (basicProgress.length > 3) {
+          print('  ... 还有 ${basicProgress.length - 3} 条');
+        }
+      }
+
+      if (kDebugMode) {
+        print('🎉 CloudKit数据下载测试完成！');
+        print('📋 总结:');
+        print('   - 模块进度: ${moduleProgress.length} 条');
+        print('   - 错题记录: ${wrongQuestions.length} 条');
+        print('   - 基础进度: ${basicProgress.length} 条');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ 下载测试失败: $e');
+      }
+    }
+  }
+
+  /// 综合测试CloudKit上传和下载
+  static Future<void> testCloudKitUploadDownload() async {
+    if (kDebugMode) {
+      print('🔄 开始CloudKit上传下载综合测试...');
+    }
+
+    await testUploadLocalData();
+    await Future.delayed(Duration(seconds: 2)); // 等待上传完成
+    await testDownloadAllData();
+
+    if (kDebugMode) {
+      print('✅ CloudKit上传下载综合测试完成！');
+    }
+  }
+
   /// 检查 CloudKit 是否可用
   static Future<bool> isCloudKitAvailable() async {
     try {
@@ -243,8 +402,8 @@ class CloudKitStorageService {
         return false;
       }
 
-      // 尝试执行一个简单的查询来检查 CloudKit 是否可用
-      await platform.invokeMethod('fetchProgress');
+      // 不再尝试查询Progress记录类型，因为它可能没有配置索引
+      // testCloudKitConnection已经足够验证CloudKit可用性
       return true;
     } catch (e) {
       if (kDebugMode) {

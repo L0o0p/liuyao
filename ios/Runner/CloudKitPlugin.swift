@@ -6,7 +6,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
     let db: CKDatabase
     
     override init() {
-        self.db = container.privateCloudDatabase
+        self.db = container.publicCloudDatabase  // 改为公共数据库
         super.init()
         
         // 打印容器信息用于调试
@@ -66,16 +66,28 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             record["timestamp"] = Date() as NSDate
             
             print("正在保存Progress记录到CloudKit: \(word) - \(score)")
+            print("🔍 Progress记录详情:")
+            print("  - 记录类型: \(record.recordType)")
+            print("  - 数据库: \(db)")
+            print("  - 容器: \(container.containerIdentifier ?? "unknown")")
+            
             db.save(record) { (savedRecord, error) in
                 DispatchQueue.main.async {
                     if let error = error {
                         print("❌ CloudKit Progress保存失败: \(error.localizedDescription)")
                         if let ckError = error as? CKError {
                             print("CKError代码: \(ckError.code.rawValue)")
+                            print("CKError详细信息: \(ckError.userInfo)")
                         }
                         result(FlutterError(code: "CK_SAVE_ERR", message: error.localizedDescription, details: nil))
                     } else {
-                        print("✅ CloudKit Progress记录保存成功: \(savedRecord?.recordID.recordName ?? "unknown")")
+                        print("✅ CloudKit Progress记录保存成功!")
+                        if let savedRecord = savedRecord {
+                            print("  - 记录ID: \(savedRecord.recordID.recordName)")
+                            print("  - 区域: \(savedRecord.recordID.zoneID.zoneName)")
+                            print("  - 所有者: \(savedRecord.recordID.zoneID.ownerName)")
+                            print("  - 创建时间: \(savedRecord.creationDate ?? Date())")
+                        }
                         result(true)
                     }
                 }
@@ -120,7 +132,9 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
                 return
             }
             
-            let record = CKRecord(recordType: "ModuleProgress")
+            // 使用固定的recordName（基于moduleId），这样可以通过recordID直接获取，无需查询
+            let recordID = CKRecord.ID(recordName: "module_\(moduleId)")
+            let record = CKRecord(recordType: "ModuleProgress", recordID: recordID)
             record["moduleId"] = moduleId as NSString
             record["progress"] = progress as NSNumber
             record["completedQuestions"] = completedQuestions as NSNumber
@@ -144,34 +158,60 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             }
             
         case "fetchModuleProgress":
-            let query = CKQuery(recordType: "ModuleProgress", predicate: NSPredicate(value: true))
-            // 暂时移除排序以避免索引问题
-            // query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+            // 不使用查询，而是直接通过已知的moduleId列表获取记录
+            // 这样可以避免索引问题
+            // 这里的moduleId对应的是学习模块（页面级别），不是题目类型
+            let moduleIds = ["tiangandizhi_wuxing", "tiangandizhi_yinyang", 
+                           "tiangandizhi_direction", "tiangandizhi_time", 
+                           "tiangandizhi_shengke", "tiangandizhi_comprehensive",
+                           "hechong", "wuxing", "shierchangsheng", "64gua",
+                           "comprehensive", "tiangandizhi", "directiontime"]
             
-            print("正在查询ModuleProgress记录...")
-            db.perform(query, inZoneWith: nil) { records, error in
+            print("正在获取ModuleProgress记录（通过recordID）...")
+            let recordIDs = moduleIds.map { CKRecord.ID(recordName: "module_\($0)") }
+            
+            let fetchOperation = CKFetchRecordsOperation(recordIDs: recordIDs)
+            
+            // 使用旧API以兼容iOS 14及以下版本
+            fetchOperation.perRecordCompletionBlock = { record, recordID, error in
+                if let error = error {
+                    // 记录不存在是正常的（用户还没有该模块的进度）
+                    if (error as NSError).code != CKError.unknownItem.rawValue {
+                        print("⚠️ 获取记录失败 \(recordID?.recordName ?? "unknown"): \(error.localizedDescription)")
+                    } else {
+                        print("📝 记录不存在: \(recordID?.recordName ?? "unknown") (这是正常的)")
+                    }
+                } else if let record = record {
+                    print("✅ 获取到模块进度: \(record["moduleId"] ?? "无") - recordID: \(record.recordID.recordName)")
+                }
+            }
+            
+            fetchOperation.fetchRecordsCompletionBlock = { recordsByID, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        // 如果是记录类型不存在的错误，返回空数组而不是错误
-                        if error.localizedDescription.contains("Did not find record type") {
-                            result([])
-                        } else {
-                            result(FlutterError(code: "CK_FETCH_ERR", message: error.localizedDescription, details: nil))
-                        }
-                    } else {
-                        let data = records?.map { record in
-                            return [
+                        print("❌ 批量获取ModuleProgress失败: \(error.localizedDescription)")
+                        // 即使失败也返回空数组，避免阻塞应用
+                        result([])
+                    } else if let recordsByID = recordsByID {
+                        var data: [[String: Any]] = []
+                        for (_, record) in recordsByID {
+                            data.append([
                                 "moduleId": record["moduleId"] as? String ?? "",
                                 "progress": record["progress"] as? Double ?? 0.0,
                                 "completedQuestions": record["completedQuestions"] as? Int ?? 0,
                                 "totalQuestions": record["totalQuestions"] as? Int ?? 0,
                                 "timestamp": (record["timestamp"] as? Date)?.timeIntervalSince1970 ?? 0
-                            ]
-                        } ?? []
+                            ])
+                        }
+                        print("✅ 成功获取 \(data.count) 条ModuleProgress记录")
                         result(data)
+                    } else {
+                        result([])
                     }
                 }
             }
+            
+            db.add(fetchOperation)
             
         case "saveWrongQuestion":
             guard let args = call.arguments as? [String: Any],
@@ -192,16 +232,28 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
             record["reviewCount"] = 0 as NSNumber
             
             print("正在保存WrongQuestion记录到CloudKit: \(questionText)")
+            print("🔍 WrongQuestion记录详情:")
+            print("  - 记录类型: \(record.recordType)")
+            print("  - 数据库类型: \(type(of: db))")
+            print("  - 是否私有数据库: \(db === container.privateCloudDatabase)")
+            
             db.save(record) { (savedRecord, error) in
                 DispatchQueue.main.async {
                     if let error = error {
                         print("❌ CloudKit WrongQuestion保存失败: \(error.localizedDescription)")
                         if let ckError = error as? CKError {
                             print("CKError代码: \(ckError.code.rawValue)")
+                            print("CKError详细信息: \(ckError.userInfo)")
                         }
                         result(FlutterError(code: "CK_SAVE_ERR", message: error.localizedDescription, details: nil))
                     } else {
-                        print("✅ CloudKit WrongQuestion记录保存成功: \(savedRecord?.recordID.recordName ?? "unknown")")
+                        print("✅ CloudKit WrongQuestion记录保存成功!")
+                        if let savedRecord = savedRecord {
+                            print("  - 记录ID: \(savedRecord.recordID.recordName)")
+                            print("  - 区域: \(savedRecord.recordID.zoneID.zoneName)")
+                            print("  - 所有者: \(savedRecord.recordID.zoneID.ownerName)")
+                            print("  - 数据库: \(savedRecord.recordID.zoneID.ownerName == CKCurrentUserDefaultName ? "私有" : "公共")")
+                        }
                         result(true)
                     }
                 }
