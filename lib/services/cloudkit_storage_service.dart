@@ -200,6 +200,9 @@ class CloudKitStorageService {
         print('🔍 开始CloudKit综合测试...');
       }
 
+      // 先执行详细状态调试
+      await debugCloudKitStatus();
+
       // 执行上传下载综合测试
       await testCloudKitUploadDownload();
 
@@ -374,6 +377,25 @@ class CloudKitStorageService {
     } catch (e) {
       if (kDebugMode) {
         print('❌ 下载测试失败: $e');
+      }
+    }
+  }
+
+  /// 调试CloudKit详细状态
+  static Future<void> debugCloudKitStatus() async {
+    try {
+      if (kDebugMode) {
+        print('🔍 开始CloudKit详细状态调试...');
+      }
+
+      await platform.invokeMethod('debugCloudKitStatus');
+
+      if (kDebugMode) {
+        print('✅ CloudKit状态调试完成，请查看上方详细信息');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ CloudKit状态调试失败: $e');
       }
     }
   }

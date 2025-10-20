@@ -6,7 +6,7 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
     let db: CKDatabase
     
     override init() {
-        self.db = container.publicCloudDatabase  // 改为公共数据库
+        self.db = container.privateCloudDatabase  // 改回私有数据库
         super.init()
         
         // 打印容器信息用于调试
@@ -311,6 +311,60 @@ public class CloudKitPlugin: NSObject, FlutterPlugin {
                     }
                 }
             }
+            
+        case "debugCloudKitStatus":
+            print("🔍 CloudKit 详细状态调试...")
+            
+            // 1. 检查容器和数据库信息
+            print("📋 基本信息:")
+            print("  - 容器ID: \(container.containerIdentifier ?? "unknown")")
+            print("  - 数据库类型: \(db === container.privateCloudDatabase ? "私有" : "公共")")
+            
+            // 2. 检查账户状态
+            container.accountStatus { accountStatus, error in
+                DispatchQueue.main.async {
+                    print("👤 账户状态:")
+                    switch accountStatus {
+                    case .available:
+                        print("  - 状态: ✅ 可用")
+                    case .noAccount:
+                        print("  - 状态: ❌ 未登录iCloud")
+                    case .restricted:
+                        print("  - 状态: ⚠️ 受限制")
+                    case .couldNotDetermine:
+                        print("  - 状态: ❓ 无法确定")
+                    case .temporarilyUnavailable:
+                        print("  - 状态: ⏳ 暂时不可用")
+                    @unknown default:
+                        print("  - 状态: ❓ 未知")
+                    }
+                    
+                    if let error = error {
+                        print("  - 错误: \(error.localizedDescription)")
+                    }
+                }
+            }
+            
+            // 3. 尝试查询每种记录类型的数量
+            let recordTypes = ["Progress", "WrongQuestion", "ModuleProgress"]
+            for recordType in recordTypes {
+                let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
+                self.db.perform(query, inZoneWith: nil) { records, error in
+                    DispatchQueue.main.async {
+                        if let error = error {
+                            print("📊 \(recordType): ❌ 查询失败 - \(error.localizedDescription)")
+                        } else {
+                            print("📊 \(recordType): ✅ 找到 \(records?.count ?? 0) 条记录")
+                            if let records = records, records.count > 0 {
+                                print("  - 最新记录ID: \(records.first?.recordID.recordName ?? "unknown")")
+                                print("  - 创建时间: \(records.first?.creationDate ?? Date())")
+                            }
+                        }
+                    }
+                }
+            }
+            
+            result("CloudKit状态调试完成，请查看控制台输出")
             
         case "testCloudKitConnection":
             print("测试CloudKit连接...")
