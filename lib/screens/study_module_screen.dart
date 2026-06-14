@@ -54,9 +54,20 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
     _roundManager = RoundManager(widget.moduleType);
     await _roundManager.initialize();
 
+    final initialIndex = _roundManager.currentIndex.clamp(
+      0,
+      _roundManager.questions.isEmpty ? 0 : _roundManager.questions.length - 1,
+    );
+
     setState(() {
       questions = _roundManager.questions;
+      _currentPageIndex = initialIndex;
       _isLoading = false;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients || questions.isEmpty) return;
+      _pageController.jumpToPage(initialIndex);
     });
   }
 
@@ -95,6 +106,9 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
   /// 获取学习模式提示文字
   String _getModeHint() {
     if (_isLoading) return "";
+    if (_roundManager.usesFirstRoundParts) {
+      return "首轮学习 · 第 ${_roundManager.currentPartNumber}/${_roundManager.totalParts} 组";
+    }
     return _roundManager.isFirstRoundCompleted ? "复习模式" : "首轮学习";
   }
 
@@ -128,6 +142,7 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
 
   /// 处理完成本轮学习
   Future<void> _onRoundComplete() async {
+    final wasFirstRound = !_roundManager.isFirstRoundCompleted;
     await _roundManager.completeRound();
 
     if (!mounted) return;
@@ -138,9 +153,9 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
       builder: (context) => AlertDialog(
         title: const Text("🎉 完成本轮学习"),
         content: Text(
-          _roundManager.isFirstRoundCompleted
-              ? "恭喜完成本轮复习！\n正确率：${(_roundManager.progress.accuracy * 100).toStringAsFixed(1)}%"
-              : "恭喜完成首轮学习！\n已解锁复习模式",
+          wasFirstRound
+              ? "恭喜完成首轮学习！\n已解锁复习模式"
+              : "恭喜完成本轮复习！\n正确率：${(_roundManager.progress.accuracy * 100).toStringAsFixed(1)}%",
         ),
         actions: [
           TextButton(
@@ -156,6 +171,126 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
               _initializeRoundManager(); // 开始新一轮
             },
             child: const Text("继续练习"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onAnswerSubmitted(
+    int index,
+    Question question,
+    bool isCorrect, {
+    String? userAnswer,
+  }) async {
+    await _roundManager.submitAnswer(index, isCorrect);
+
+    if (!isCorrect && userAnswer != null) {
+      await _recordWrongQuestion(question, userAnswer);
+    }
+
+    if (!mounted) return;
+    setState(() {});
+
+    if (_roundManager.isCurrentRoundAnswered) {
+      await _onRoundComplete();
+      return;
+    }
+
+    if (_roundManager.isAtPartBreak) {
+      await _showPartCompleteDialog();
+      return;
+    }
+
+    if (isCorrect && index < questions.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Future<void> _showPartCompleteDialog() async {
+    final completedPart = _roundManager.currentIndex ~/ _roundManager.partSize;
+    final correctCount = _roundManager.currentPartCorrectCount;
+    final wrongCount = _roundManager.currentPartWrongCount;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text("完成第 $completedPart/${_roundManager.totalParts} 组"),
+        content: Text(
+          "本组 ${_roundManager.partSize} 题\n"
+          "答对 $correctCount 题\n"
+          "答错 $wrongCount 题",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await _roundManager.continueAfterPartBreak();
+              if (!context.mounted) return;
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+            },
+            child: const Text("暂时退出"),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await _roundManager.continueAfterPartBreak();
+              if (!context.mounted) return;
+              Navigator.of(context).pop();
+              if (_pageController.hasClients) {
+                _pageController.nextPage(
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeInOut,
+                );
+              }
+              if (mounted) {
+                setState(() {});
+              }
+            },
+            child: const Text("继续下一组"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressHeader() {
+    if (!_roundManager.usesFirstRoundParts) {
+      return const SizedBox.shrink();
+    }
+
+    final total = questions.length;
+    final answered = _roundManager.currentIndex.clamp(0, total);
+    final partAnswered = _roundManager.currentPartAnsweredCount;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                "本组 $partAnswered/${_roundManager.partSize}",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const Spacer(),
+              Text(
+                "总进度 $answered/$total",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: total == 0 ? 0 : answered / total,
+              minHeight: 8,
+            ),
           ),
         ],
       ),
@@ -178,7 +313,7 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
                 _getModeHint(),
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontWeight: FontWeight.normal,
                 ),
               ),
@@ -189,10 +324,10 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -210,38 +345,33 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
-              // 添加SafeArea确保内容不被状态栏遮挡
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: questions.length,
-                itemBuilder: (context, index) {
-                  final q = questions[index];
-                  return FlipCard(
-                    question: q,
-                    onCorrectAnswer: () async {
-                      // 记录答题结果
-                      await _roundManager.submitAnswer(index, true);
-
-                      // 自动翻到下一张卡片
-                      if (index < questions.length - 1) {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
+              child: Column(
+                children: [
+                  _buildProgressHeader(),
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: questions.length,
+                      itemBuilder: (context, index) {
+                        final q = questions[index];
+                        return FlipCard(
+                          question: q,
+                          onCorrectAnswer: () async {
+                            await _onAnswerSubmitted(index, q, true);
+                          },
+                          onWrongAnswer: (userAnswer) async {
+                            await _onAnswerSubmitted(
+                              index,
+                              q,
+                              false,
+                              userAnswer: userAnswer,
+                            );
+                          },
                         );
-                      } else {
-                        // 完成本轮
-                        await _onRoundComplete();
-                      }
-                    },
-                    onWrongAnswer: (userAnswer) async {
-                      // 记录答题结果
-                      await _roundManager.submitAnswer(index, false);
-
-                      // 记录错题
-                      await _recordWrongQuestion(q, userAnswer);
-                    },
-                  );
-                },
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
     );

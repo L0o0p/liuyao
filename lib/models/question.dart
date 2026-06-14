@@ -8,4 +8,18 @@ class Question {
     required this.options,
     required this.correctAnswer,
   });
+
+  factory Question.fromJson(Map<String, dynamic> json) {
+    return Question(
+      text: json['text'] as String,
+      options: (json['options'] as List<dynamic>)
+          .map((option) => option as String)
+          .toList(),
+      correctAnswer: json['correctAnswer'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'text': text, 'options': options, 'correctAnswer': correctAnswer};
+  }
 }

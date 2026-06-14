@@ -589,6 +589,11 @@ class Questions {
     // 从所有卦名中随机选择一个作为题目
     final guaNames = getAllGuaNames();
     final correctGua = guaNames[_rnd.nextInt(guaNames.length)];
+    return generateGuaToXiangQuestionFor(correctGua);
+  }
+
+  /// 为指定卦名生成卦名到卦象题目
+  static Question generateGuaToXiangQuestionFor(String correctGua) {
     final correctXiang = getGuaXiang(correctGua)!;
 
     // 生成错误选项：从其他卦象中随机选择
@@ -613,7 +618,13 @@ class Questions {
     // 从所有卦名中随机选择一个作为题目
     final guaNames = getAllGuaNames();
     final correctGua = guaNames[_rnd.nextInt(guaNames.length)];
+    return generateXiangToGuaQuestionFor(correctGua);
+  }
+
+  /// 为指定卦名生成卦象到卦名题目
+  static Question generateXiangToGuaQuestionFor(String correctGua) {
     final correctXiang = getGuaXiang(correctGua)!;
+    final guaNames = getAllGuaNames();
 
     // 生成错误选项：从其他卦名中随机选择
     final wrongOptions = List<String>.from(guaNames)..remove(correctGua);

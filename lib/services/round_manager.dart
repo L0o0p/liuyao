@@ -5,6 +5,7 @@ import 'storage_service.dart';
 import 'questions.dart';
 import '../data/tian_gan.dart';
 import '../data/di_zhi.dart';
+import '../data/gua_data.dart';
 
 /// 题表管理器
 /// 核心职责：
@@ -13,6 +14,8 @@ import '../data/di_zhi.dart';
 /// 3. 复习模式：根据熟练度和随机策略生成题目
 /// 4. 管理学习进度的持久化
 class RoundManager {
+  static const int guaFirstRoundPartSize = 16;
+
   final String moduleId;
   late ModuleProgress _progress;
   List<Question> _currentRound = [];
@@ -24,7 +27,16 @@ class RoundManager {
   /// 必须在使用 RoundManager 前调用
   Future<void> initialize() async {
     _progress = await StorageService.loadProgress(moduleId);
-    await _generateQuestions();
+
+    if (_progress.currentRoundQuestions.isNotEmpty) {
+      _currentRound = _progress.currentRoundQuestions;
+      if (_progress.currentQuestionIndex >= _currentRound.length) {
+        await completeRound();
+      }
+    } else {
+      await _generateQuestions();
+      await _saveCurrentRound();
+    }
   }
 
   /// 获取当前轮次的所有题目
@@ -38,6 +50,60 @@ class RoundManager {
 
   /// 获取进度对象（用于展示统计信息）
   ModuleProgress get progress => _progress;
+
+  /// 当前模块首轮是否需要按组学习
+  bool get usesFirstRoundParts =>
+      moduleId == '64gua' && !_progress.firstRoundCompleted;
+
+  /// 当前分组题数
+  int get partSize =>
+      usesFirstRoundParts ? guaFirstRoundPartSize : questions.length;
+
+  /// 当前首轮总分组数
+  int get totalParts =>
+      usesFirstRoundParts ? (_currentRound.length / partSize).ceil() : 1;
+
+  /// 当前分组序号（从1开始）
+  int get currentPartNumber {
+    if (!usesFirstRoundParts || _currentRound.isEmpty) return 1;
+    final index = _progress.currentQuestionIndex.clamp(
+      0,
+      _currentRound.length - 1,
+    );
+    return (index ~/ partSize) + 1;
+  }
+
+  /// 当前分组内题号（从1开始）
+  int get currentPartQuestionNumber {
+    if (!usesFirstRoundParts || _currentRound.isEmpty) {
+      return _progress.currentQuestionIndex + 1;
+    }
+    return (_progress.currentQuestionIndex % partSize) + 1;
+  }
+
+  /// 当前分组内已答题数
+  int get currentPartAnsweredCount {
+    if (!usesFirstRoundParts) return _progress.currentQuestionIndex;
+    return _progress.currentQuestionIndex % partSize;
+  }
+
+  /// 当前分组是否刚好完成
+  bool get isAtPartBreak {
+    if (!usesFirstRoundParts || _currentRound.isEmpty) return false;
+    final index = _progress.currentQuestionIndex;
+    return index > 0 && index < _currentRound.length && index % partSize == 0;
+  }
+
+  /// 是否已经答完整个当前轮次
+  bool get isCurrentRoundAnswered =>
+      _currentRound.isNotEmpty &&
+      _progress.currentQuestionIndex >= _currentRound.length;
+
+  /// 当前分组答对数
+  int get currentPartCorrectCount => _progress.currentPartCorrectCount;
+
+  /// 当前分组答错数
+  int get currentPartWrongCount => _progress.currentPartWrongCount;
 
   /// 生成题目列表
   /// 根据是否首次学习，采用不同策略
@@ -145,14 +211,15 @@ class RoundManager {
         break;
 
       case '64gua':
-        // 六十四卦：每个卦各出一题，共64题
-        // 由于题目数量较多，分为两种类型：卦名→卦象 和 卦象→卦名
-        // 每种类型各32题，确保全覆盖
-        for (int i = 0; i < 32; i++) {
-          questions.add(Questions.generateGuaToXiangQuestion());
-        }
-        for (int i = 0; i < 32; i++) {
-          questions.add(Questions.generateXiangToGuaQuestion());
+        // 六十四卦：每个卦各出一题，共64题，题型交错分布
+        final guaNames = getAllGuaNames()..shuffle(_rnd);
+        for (int i = 0; i < guaNames.length; i++) {
+          final guaName = guaNames[i];
+          questions.add(
+            i.isEven
+                ? Questions.generateGuaToXiangQuestionFor(guaName)
+                : Questions.generateXiangToGuaQuestionFor(guaName),
+          );
         }
         break;
 
@@ -295,12 +362,23 @@ class RoundManager {
   /// @param questionIndex 题目索引
   /// @param isCorrect 是否答对
   Future<void> submitAnswer(int questionIndex, bool isCorrect) async {
+    if (questionIndex < _progress.currentQuestionIndex) {
+      return;
+    }
+
     // 更新统计
     if (isCorrect) {
       _progress.totalCorrectCount++;
+      _progress.currentPartCorrectCount++;
     } else {
       _progress.totalWrongCount++;
+      _progress.currentPartWrongCount++;
     }
+
+    _progress.currentQuestionIndex = (questionIndex + 1).clamp(
+      0,
+      _currentRound.length,
+    );
 
     // 提取知识点ID并更新熟练度
     // TODO: 需要从题目中提取知识点ID，这里暂时跳过
@@ -308,6 +386,12 @@ class RoundManager {
     // _progress.updateProficiency(itemId, isCorrect);
 
     // 保存进度
+    await StorageService.saveProgress(_progress);
+  }
+
+  /// 从分组休息点继续下一组
+  Future<void> continueAfterPartBreak() async {
+    _progress.resetCurrentPartStats();
     await StorageService.saveProgress(_progress);
   }
 
@@ -323,6 +407,7 @@ class RoundManager {
 
     // 生成下一轮题目
     await _generateQuestions();
+    await _saveCurrentRound();
   }
 
   /// 获取下一题
@@ -342,5 +427,11 @@ class RoundManager {
     await StorageService.clearProgress(moduleId);
     _progress = ModuleProgress(moduleId: moduleId);
     await _generateQuestions();
+    await _saveCurrentRound();
+  }
+
+  Future<void> _saveCurrentRound() async {
+    _progress.currentRoundQuestions = List<Question>.from(_currentRound);
+    await StorageService.saveProgress(_progress);
   }
 }

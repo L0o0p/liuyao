@@ -1,3 +1,5 @@
+import 'question.dart';
+
 /// 模块学习进度数据模型
 /// 用于追踪用户在某个学习模块中的进度和熟练度
 class ModuleProgress {
@@ -30,6 +32,16 @@ class ModuleProgress {
   /// 总共答错的题目数量（累计）
   int totalWrongCount;
 
+  /// 当前轮次题表
+  /// 用于恢复长首轮学习，避免退出后重新生成导致题目顺序变化
+  List<Question> currentRoundQuestions;
+
+  /// 当前分组内答对数量
+  int currentPartCorrectCount;
+
+  /// 当前分组内答错数量
+  int currentPartWrongCount;
+
   ModuleProgress({
     required this.moduleId,
     this.firstRoundCompleted = false,
@@ -38,8 +50,12 @@ class ModuleProgress {
     this.currentQuestionIndex = 0,
     this.totalCorrectCount = 0,
     this.totalWrongCount = 0,
+    List<Question>? currentRoundQuestions,
+    this.currentPartCorrectCount = 0,
+    this.currentPartWrongCount = 0,
   }) : learnedItems = learnedItems ?? [],
-       proficiency = proficiency ?? {};
+       proficiency = proficiency ?? {},
+       currentRoundQuestions = currentRoundQuestions ?? [];
 
   /// 从 JSON 反序列化
   factory ModuleProgress.fromJson(Map<String, dynamic> json) {
@@ -59,6 +75,13 @@ class ModuleProgress {
       currentQuestionIndex: json['currentQuestionIndex'] as int? ?? 0,
       totalCorrectCount: json['totalCorrectCount'] as int? ?? 0,
       totalWrongCount: json['totalWrongCount'] as int? ?? 0,
+      currentRoundQuestions:
+          (json['currentRoundQuestions'] as List<dynamic>?)
+              ?.map((e) => Question.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      currentPartCorrectCount: json['currentPartCorrectCount'] as int? ?? 0,
+      currentPartWrongCount: json['currentPartWrongCount'] as int? ?? 0,
     );
   }
 
@@ -72,6 +95,11 @@ class ModuleProgress {
       'currentQuestionIndex': currentQuestionIndex,
       'totalCorrectCount': totalCorrectCount,
       'totalWrongCount': totalWrongCount,
+      'currentRoundQuestions': currentRoundQuestions
+          .map((question) => question.toJson())
+          .toList(),
+      'currentPartCorrectCount': currentPartCorrectCount,
+      'currentPartWrongCount': currentPartWrongCount,
     };
   }
 
@@ -100,6 +128,15 @@ class ModuleProgress {
   /// 重置当前轮次进度（开始新一轮）
   void resetRound() {
     currentQuestionIndex = 0;
+    currentPartCorrectCount = 0;
+    currentPartWrongCount = 0;
+    currentRoundQuestions = [];
+  }
+
+  /// 重置当前分组统计
+  void resetCurrentPartStats() {
+    currentPartCorrectCount = 0;
+    currentPartWrongCount = 0;
   }
 
   /// 获取需要加强练习的知识点列表
@@ -118,4 +155,3 @@ class ModuleProgress {
     return totalCorrectCount / total;
   }
 }
-
