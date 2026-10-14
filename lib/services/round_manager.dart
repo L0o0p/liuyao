@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'dart:math';
 import '../models/question.dart';
 import '../models/module_progress.dart';
 import 'storage_service.dart';
 import 'questions.dart';
+import 'sync/sync_engine.dart';
 import '../data/tian_gan.dart';
 import '../data/di_zhi.dart';
 import '../data/gua_data.dart';
+import '../data/wu_xing.dart';
+import '../data/zhi_relations.dart';
 
 /// 题表管理器
 /// 核心职责：
@@ -15,6 +19,18 @@ import '../data/gua_data.dart';
 /// 4. 管理学习进度的持久化
 class RoundManager {
   static const int guaFirstRoundPartSize = 16;
+
+  /// 综合类模块每轮题数
+  static const int comprehensiveRoundSize = 20;
+
+  /// 综合练习的出题来源模块
+  static const List<String> comprehensiveSourceModules = [
+    'tiangandizhi_comprehensive',
+    'wuxing',
+    'hechong',
+    'shierchangsheng',
+    '64gua',
+  ];
 
   final String moduleId;
   late ModuleProgress _progress;
@@ -178,18 +194,18 @@ class RoundManager {
         break;
 
       case 'hechong':
-        // 刑冲合害：各类型各5题
-        for (int i = 0; i < 5; i++) {
-          questions.add(Questions.generateLiuHeQuestion());
+        // 刑冲合害：六合按12个地支各一题，三合、三刑按组合各一题，自刑按地支各一题
+        for (final zhi in diZhi.map((z) => z["name"]!)) {
+          questions.add(Questions.generateLiuHeQuestion(zhi: zhi));
         }
-        for (int i = 0; i < 5; i++) {
-          questions.add(Questions.generateSanHeQuestion());
+        for (final group in sanHe) {
+          questions.add(Questions.generateSanHeQuestion(input: group.join()));
         }
-        for (int i = 0; i < 5; i++) {
-          questions.add(Questions.generateSanXingQuestion());
+        for (final group in sanXing) {
+          questions.add(Questions.generateSanXingQuestion(input: group.join()));
         }
-        for (int i = 0; i < 5; i++) {
-          questions.add(Questions.generateZiXingQuestion());
+        for (final zhi in ziXing.keys) {
+          questions.add(Questions.generateZiXingQuestion(input: zhi));
         }
         questions.shuffle(_rnd);
         break;
@@ -204,10 +220,24 @@ class RoundManager {
         break;
 
       case 'shierchangsheng':
-        // 十二长生：生成20题全覆盖
-        questions.addAll(
-          List.generate(20, (_) => Questions.generateChangShengQuestion()),
-        );
+        // 十二长生：12个日支各出两题，12个阶段也各出现两次
+        questions.addAll(_generateChangShengCoverage());
+        questions.shuffle(_rnd);
+        break;
+
+      case 'tiangandizhi_shengke':
+        // 五行生克：5个五行的相生、相克各出一题
+        for (final wuxing in wuXingSheng.keys) {
+          questions.add(Questions.generateWuXingShengQuestion(wuxing: wuxing));
+          questions.add(Questions.generateWuXingKeQuestion(wuxing: wuxing));
+        }
+        questions.shuffle(_rnd);
+        break;
+
+      case 'tiangandizhi_comprehensive':
+      case 'comprehensive':
+        // 综合练习：混合随机出题，同一轮内不重复知识点
+        questions.addAll(_generateMixedRound(comprehensiveRoundSize));
         break;
 
       case '64gua':
@@ -243,7 +273,6 @@ class RoundManager {
 
     final int totalQuestions = 20; // 复习模式默认20题
     final int weakCount = (totalQuestions * 0.6).round();
-    final int randomCount = totalQuestions - weakCount;
 
     // 生成薄弱知识点题目
     for (int i = 0; i < weakCount && weakItems.isNotEmpty; i++) {
@@ -251,8 +280,8 @@ class RoundManager {
       questions.add(_createQuestionForItem(item));
     }
 
-    // 生成随机题目
-    for (int i = 0; i < randomCount; i++) {
+    // 生成随机题目，没有薄弱知识点时也补足题量
+    while (questions.length < totalQuestions) {
       questions.add(_generateRandomQuestionForModule());
     }
 
@@ -261,35 +290,80 @@ class RoundManager {
     return questions;
   }
 
-  /// 为特定知识点生成题目
-  Question _createQuestionForItem(String item) {
-    // 根据知识点ID生成对应题目
-    // 判断是天干还是地支
-    final isGan = tianGan.any((g) => g["name"] == item);
+  /// 为特定知识点生成题目。
+  /// itemKey 格式为 questionType:input，例如 gan_wuxing:甲。
+  Question _createQuestionForItem(String itemKey) {
+    final separator = itemKey.indexOf(':');
+    if (separator <= 0 || separator >= itemKey.length - 1) {
+      return _generateRandomQuestionForModule();
+    }
+    final type = itemKey.substring(0, separator);
+    final input = itemKey.substring(separator + 1);
 
-    if (isGan) {
-      // 随机选择天干相关题型
-      final types = [
-        () => _createGanWuXingQuestion(item),
-        () => _createGanYinYangQuestion(item),
-        () => _createGanDirectionQuestion(item),
-      ];
-      return types[_rnd.nextInt(types.length)]();
-    } else {
-      // 随机选择地支相关题型
-      final types = [
-        () => _createZhiWuXingQuestion(item),
-        () => _createZhiYinYangQuestion(item),
-        () => _createZhiDirectionQuestion(item),
-        () => _createZhiTimeQuestion(item),
-      ];
-      return types[_rnd.nextInt(types.length)]();
+    switch (type) {
+      case 'gan_wuxing':
+        return Questions.generateGanWuXingQuestion(gan: input);
+      case 'zhi_wuxing':
+        return Questions.generateZhiWuXingQuestion(zhi: input);
+      case 'gan_yinyang':
+        return Questions.generateGanYinYangQuestion(gan: input);
+      case 'zhi_yinyang':
+        return Questions.generateZhiYinYangQuestion(zhi: input);
+      case 'gan_direction':
+        return Questions.generateGanDirectionQuestion(gan: input);
+      case 'zhi_direction':
+        return Questions.generateZhiDirectionQuestion(zhi: input);
+      case 'gan_season':
+        return Questions.generateGanSeasonQuestion(gan: input);
+      case 'zhi_season':
+        return Questions.generateZhiSeasonQuestion(zhi: input);
+      case 'gan_month':
+        return Questions.generateGanMonthQuestion(gan: input);
+      case 'zhi_month':
+        return Questions.generateZhiMonthQuestion(zhi: input);
+      case 'gan_time':
+        return Questions.generateGanTimeQuestion(gan: input);
+      case 'zhi_time':
+        return Questions.generateZhiTimeQuestion(zhi: input);
+      case 'zhi_hour':
+        return Questions.generateZhiHourQuestion(zhi: input);
+      case 'zhi_liuhe':
+        return Questions.generateLiuHeQuestion(zhi: input);
+      case 'zhi_sanhe':
+        return Questions.generateSanHeQuestion(input: input);
+      case 'zhi_sanxing':
+        return Questions.generateSanXingQuestion(input: input);
+      case 'zhi_zixing':
+        return Questions.generateZiXingQuestion(input: input);
+      case 'finger_forward':
+        return Questions.generateFingerJointForwardQuestion(zhi: input);
+      case 'finger_reverse':
+        return Questions.generateFingerJointReverseQuestion(input: input);
+      case 'wuxing_sheng':
+        return Questions.generateWuXingShengQuestion(wuxing: input);
+      case 'wuxing_ke':
+        return Questions.generateWuXingKeQuestion(wuxing: input);
+      case 'changsheng':
+        return Questions.generateChangShengQuestion(input: input);
+      case 'gua_to_xiang':
+        return Questions.generateGuaToXiangQuestionFor(input);
+      case 'xiang_to_gua':
+        final guaName = getGuaName(input);
+        if (guaName == null) return _generateRandomQuestionForModule();
+        return Questions.generateXiangToGuaQuestionFor(guaName);
+      default:
+        return _generateRandomQuestionForModule();
     }
   }
 
   /// 为当前模块生成随机题目
   Question _generateRandomQuestionForModule() {
-    switch (moduleId) {
+    return _generateRandomQuestionFor(moduleId);
+  }
+
+  /// 为指定模块生成随机题目
+  Question _generateRandomQuestionFor(String id) {
+    switch (id) {
       case 'tiangandizhi_wuxing':
         return _rnd.nextBool()
             ? Questions.generateGanWuXingQuestion()
@@ -318,51 +392,113 @@ class RoundManager {
         return Questions.generateChangShengQuestion();
       case '64gua':
         return Questions.generate64GuaQuestion();
+      case 'tiangandizhi_shengke':
+        return _rnd.nextBool()
+            ? Questions.generateWuXingShengQuestion()
+            : Questions.generateWuXingKeQuestion();
+      case 'tiangandizhi_comprehensive':
+        final generators = <Question Function()>[
+          () => Questions.generateGanWuXingQuestion(),
+          () => Questions.generateZhiWuXingQuestion(),
+          () => Questions.generateGanYinYangQuestion(),
+          () => Questions.generateZhiYinYangQuestion(),
+          () => Questions.generateGanDirectionQuestion(),
+          () => Questions.generateZhiDirectionQuestion(),
+          () => Questions.generateZhiTimeQuestion(),
+          () => Questions.generateWuXingShengQuestion(),
+          () => Questions.generateWuXingKeQuestion(),
+        ];
+        return generators[_rnd.nextInt(generators.length)]();
+      case 'comprehensive':
+        // 各来源模块等概率抽取
+        final source =
+            comprehensiveSourceModules[_rnd.nextInt(
+              comprehensiveSourceModules.length,
+            )];
+        return _generateRandomQuestionFor(source);
       default:
         return Questions.generateGanWuXingQuestion();
     }
   }
 
+  /// 生成混合随机题表，同一轮内按知识点去重
+  List<Question> _generateMixedRound(int count) {
+    final questions = <Question>[];
+    final seen = <String>{};
+    var attempts = 0;
+    while (questions.length < count && attempts < count * 20) {
+      attempts++;
+      final question = _generateRandomQuestionForModule();
+      if (seen.add(question.itemKey)) {
+        questions.add(question);
+      }
+    }
+    return questions;
+  }
+
+  /// 十二长生覆盖题表
+  /// 每一遍把12个日支与12个阶段一一配对，两遍的配对互不重复
+  List<Question> _generateChangShengCoverage() {
+    final riZhis = List<String>.from(diZhiCycle)..shuffle(_rnd);
+    final stages = List<int>.generate(changShengCycle.length, (i) => i)
+      ..shuffle(_rnd);
+    final questions = <Question>[];
+    for (final pass in [0, 6]) {
+      for (int i = 0; i < riZhis.length; i++) {
+        final riZhi = riZhis[i];
+        final stage = (stages[i] + pass) % changShengCycle.length;
+        final startZhi = wuXingChangShengStart[zhiWuXing[riZhi]]!;
+        final yaoZhi =
+            diZhiCycle[(diZhiCycle.indexOf(startZhi) + stage) %
+                diZhiCycle.length];
+        questions.add(
+          Questions.generateChangShengQuestion(input: '${riZhi}_$yaoZhi'),
+        );
+      }
+    }
+    return questions;
+  }
+
   // ========== 针对特定知识点的题目生成器 ==========
 
   Question _createGanWuXingQuestion(String gan) {
-    // 复用 Questions 类的逻辑，但指定特定天干
-    return Questions.generateGanWuXingQuestion(); // TODO: 需要修改 Questions 支持指定参数
+    return Questions.generateGanWuXingQuestion(gan: gan);
   }
 
   Question _createZhiWuXingQuestion(String zhi) {
-    return Questions.generateZhiWuXingQuestion();
+    return Questions.generateZhiWuXingQuestion(zhi: zhi);
   }
 
   Question _createGanYinYangQuestion(String gan) {
-    return Questions.generateGanYinYangQuestion();
+    return Questions.generateGanYinYangQuestion(gan: gan);
   }
 
   Question _createZhiYinYangQuestion(String zhi) {
-    return Questions.generateZhiYinYangQuestion();
+    return Questions.generateZhiYinYangQuestion(zhi: zhi);
   }
 
   Question _createGanDirectionQuestion(String gan) {
-    return Questions.generateGanDirectionQuestion();
+    return Questions.generateGanDirectionQuestion(gan: gan);
   }
 
   Question _createZhiDirectionQuestion(String zhi) {
-    return Questions.generateZhiDirectionQuestion();
+    return Questions.generateZhiDirectionQuestion(zhi: zhi);
   }
 
   Question _createZhiTimeQuestion(String zhi) {
-    return Questions.generateZhiTimeQuestion();
+    return Questions.generateZhiTimeQuestion(zhi: zhi);
   }
 
   Question _createFingerJointQuestion(String zhi) {
-    return Questions.generateFingerJointForwardQuestion();
+    return Questions.generateFingerJointForwardQuestion(zhi: zhi);
   }
 
   /// 提交答案并更新进度
   /// @param questionIndex 题目索引
   /// @param isCorrect 是否答对
+  /// 只接受当前题的提交，避免跳题
   Future<void> submitAnswer(int questionIndex, bool isCorrect) async {
-    if (questionIndex < _progress.currentQuestionIndex) {
+    if (questionIndex != _progress.currentQuestionIndex) {
       return;
     }
 
@@ -380,10 +516,14 @@ class RoundManager {
       _currentRound.length,
     );
 
-    // 提取知识点ID并更新熟练度
-    // TODO: 需要从题目中提取知识点ID，这里暂时跳过
-    // final itemId = _extractItemIdFromQuestion(_currentRound[questionIndex]);
-    // _progress.updateProficiency(itemId, isCorrect);
+    // 用题目上的知识点键更新熟练度，并记入已学列表
+    if (questionIndex >= 0 && questionIndex < _currentRound.length) {
+      final question = _currentRound[questionIndex];
+      if (question.questionType.isNotEmpty && question.input.isNotEmpty) {
+        _progress.updateProficiency(question.itemKey, isCorrect);
+        _progress.markItemAsLearned(question.itemKey);
+      }
+    }
 
     // 保存进度
     await StorageService.saveProgress(_progress);
@@ -408,6 +548,9 @@ class RoundManager {
     // 生成下一轮题目
     await _generateQuestions();
     await _saveCurrentRound();
+
+    // 答完一轮后尝试同步。失败不能挡住界面。
+    unawaited(SyncEngine.instance.sync());
   }
 
   /// 获取下一题

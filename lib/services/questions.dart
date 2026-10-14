@@ -16,63 +16,71 @@ class Questions {
   // ========== 基础五行阴阳题目生成器 ==========
 
   /// 地支五行题目生成器
-  static Question generateZhiWuXingQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiWuXing(zhi);
+  static Question generateZhiWuXingQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getZhiWuXing(resolved);
 
     final options = _wuxing;
     return Question(
-      text: "$zhi 属于什么五行？",
+      text: "$resolved 属于什么五行？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_wuxing',
+      input: resolved,
     );
   }
 
   /// 天干五行题目生成器
-  static Question generateGanWuXingQuestion() {
-    final gan = tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
-    final correct = getGanWuXing(gan);
+  static Question generateGanWuXingQuestion({String? gan}) {
+    final resolved = gan ?? tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
+    final correct = getGanWuXing(resolved);
 
     final options = _wuxing;
     return Question(
-      text: "$gan 属于什么五行？",
+      text: "$resolved 属于什么五行？",
       options: options,
       correctAnswer: correct,
+      questionType: 'gan_wuxing',
+      input: resolved,
     );
   }
 
   /// 天干阴阳题目生成器
-  static Question generateGanYinYangQuestion() {
-    final gan = tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
-    final correct = getGanYinYang(gan);
+  static Question generateGanYinYangQuestion({String? gan}) {
+    final resolved = gan ?? tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
+    final correct = getGanYinYang(resolved);
 
     final options = ["阳", "阴"];
     return Question(
-      text: "$gan 属于阴还是阳？",
+      text: "$resolved 属于阴还是阳？",
       options: options,
       correctAnswer: correct,
+      questionType: 'gan_yinyang',
+      input: resolved,
     );
   }
 
   /// 地支阴阳题目生成器
-  static Question generateZhiYinYangQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiYinYang(zhi);
+  static Question generateZhiYinYangQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getZhiYinYang(resolved);
 
     final options = ["阳", "阴"];
     return Question(
-      text: "$zhi 属于阴还是阳？",
+      text: "$resolved 属于阴还是阳？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_yinyang',
+      input: resolved,
     );
   }
 
   // ========== 刑冲合害题目生成器 ==========
 
   /// 六合题目生成器
-  static Question generateLiuHeQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getLiuHe(zhi);
+  static Question generateLiuHeQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getLiuHe(resolved);
 
     // 生成错误选项：从其他地支中随机选择3个
     final allDiZhiNames = diZhi.map((item) => item["name"]!).toList();
@@ -84,16 +92,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "谁和$zhi 六合？",
+      text: "谁和$resolved 六合？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_liuhe',
+      input: resolved,
     );
   }
 
   /// 三合题目生成器
-  static Question generateSanHeQuestion() {
-    // 随机抽一个三合组合作为正确答案
-    final correctGroup = sanHe[_rnd.nextInt(sanHe.length)];
+  static Question generateSanHeQuestion({String? input}) {
+    // 指定输入时按该三合出题，否则随机抽一个
+    final correctGroup = _pickRelationGroup(sanHe, input);
 
     // 生成三个错误选项，每个都是随机选择3个地支的组合
     final allZhi = diZhi.map((d) => d["name"]!).toList();
@@ -136,16 +146,18 @@ class Questions {
       text: "以下哪个是三合组合？",
       options: options,
       correctAnswer: correctGroup.join(" "),
+      questionType: 'zhi_sanhe',
+      input: correctGroup.join(),
     );
   }
 
   /// 三刑题目生成器
-  static Question generateSanXingQuestion() {
+  static Question generateSanXingQuestion({String? input}) {
     // 不再过滤三刑组合，直接使用全部三刑数据
     final sanXingGroups = sanXing;
 
-    // 随机抽一个三刑组合作为正确答案
-    final correctGroup = sanXingGroups[_rnd.nextInt(sanXingGroups.length)];
+    // 指定输入时按该三刑出题，否则随机抽一个
+    final correctGroup = _pickRelationGroup(sanXingGroups, input);
 
     // 生成三个错误选项，每个都是随机选择3个地支的组合
     final allZhi = diZhi.map((d) => d["name"]!).toList();
@@ -188,14 +200,18 @@ class Questions {
       text: "以下哪个是三刑组合？",
       options: options,
       correctAnswer: correctGroup.join(" "),
+      questionType: 'zhi_sanxing',
+      input: correctGroup.join(),
     );
   }
 
   /// 自刑题目生成器
-  static Question generateZiXingQuestion() {
-    // 正确答案：一个随机自刑地支
+  static Question generateZiXingQuestion({String? input}) {
+    // 正确答案：指定的自刑地支，或随机一个
     final keys = ziXing.keys.toList();
-    final correct = keys[_rnd.nextInt(keys.length)];
+    final correct = (input != null && keys.contains(input))
+        ? input
+        : keys[_rnd.nextInt(keys.length)];
 
     // 随机三个错误答案（不在自刑的keys里）
     final allZhi = diZhi.map((d) => d["name"]!).toList();
@@ -209,15 +225,34 @@ class Questions {
       text: "以下哪个地支有自刑？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_zixing',
+      input: correct,
     );
+  }
+
+  /// 按传入的组合字符串找到刑冲合害分组，找不到就随机。
+  static List<String> _pickRelationGroup(
+    List<List<String>> groups,
+    String? input,
+  ) {
+    if (input != null) {
+      for (final group in groups) {
+        if (input == group.join() ||
+            input == group.join(' ') ||
+            input == group.join(',')) {
+          return group;
+        }
+      }
+    }
+    return groups[_rnd.nextInt(groups.length)];
   }
 
   // ========== 方位时间相关问题生成器 ==========
 
   /// 天干方位题目生成器
-  static Question generateGanDirectionQuestion() {
-    final gan = tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
-    final correct = getGanDirection(gan);
+  static Question generateGanDirectionQuestion({String? gan}) {
+    final resolved = gan ?? tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
+    final correct = getGanDirection(resolved);
 
     final allDirections = ["东", "南", "西", "北", "中", "东北", "东南", "西南", "西北"];
     // 移除正确答案，然后随机选择3个错误选项
@@ -228,16 +263,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$gan 对应的方位是？",
+      text: "$resolved 对应的方位是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'gan_direction',
+      input: resolved,
     );
   }
 
   /// 地支方位题目生成器
-  static Question generateZhiDirectionQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiDirection(zhi);
+  static Question generateZhiDirectionQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getZhiDirection(resolved);
 
     final allDirections = ["东", "南", "西", "北", "中", "东北", "东南", "西南", "西北"];
     // 移除正确答案，然后随机选择3个错误选项
@@ -248,16 +285,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$zhi 对应的方位是？",
+      text: "$resolved 对应的方位是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_direction',
+      input: resolved,
     );
   }
 
   /// 天干季节题目生成器
-  static Question generateGanSeasonQuestion() {
-    final gan = tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
-    final correct = getGanSeason(gan);
+  static Question generateGanSeasonQuestion({String? gan}) {
+    final resolved = gan ?? tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
+    final correct = getGanSeason(resolved);
 
     final allSeasons = ["春", "夏", "长夏", "秋", "冬"];
     // 移除正确答案，然后随机选择3个错误选项
@@ -268,16 +307,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$gan 对应的季节是？",
+      text: "$resolved 对应的季节是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'gan_season',
+      input: resolved,
     );
   }
 
   /// 地支季节题目生成器
-  static Question generateZhiSeasonQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiSeason(zhi);
+  static Question generateZhiSeasonQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getZhiSeason(resolved);
 
     final allSeasons = ["春", "夏", "长夏", "秋", "冬"];
     // 移除正确答案，然后随机选择3个错误选项
@@ -288,16 +329,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$zhi 对应的季节是？",
+      text: "$resolved 对应的季节是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_season',
+      input: resolved,
     );
   }
 
   /// 天干月份题目生成器
-  static Question generateGanMonthQuestion() {
-    final gan = tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
-    final correct = getGanMonth(gan);
+  static Question generateGanMonthQuestion({String? gan}) {
+    final resolved = gan ?? tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
+    final correct = getGanMonth(resolved);
 
     final allMonths = [
       "正月",
@@ -321,16 +364,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$gan 对应的月份是？",
+      text: "$resolved 对应的月份是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'gan_month',
+      input: resolved,
     );
   }
 
   /// 地支月份题目生成器
-  static Question generateZhiMonthQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiMonth(zhi);
+  static Question generateZhiMonthQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getZhiMonth(resolved);
 
     final allMonths = [
       "正月",
@@ -354,16 +399,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$zhi 对应的月份是？",
+      text: "$resolved 对应的月份是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_month',
+      input: resolved,
     );
   }
 
   /// 天干时辰题目生成器
-  static Question generateGanTimeQuestion() {
-    final gan = tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
-    final correct = getGanHour(gan);
+  static Question generateGanTimeQuestion({String? gan}) {
+    final resolved = gan ?? tianGan[_rnd.nextInt(tianGan.length)]["name"]!;
+    final correct = getGanHour(resolved);
 
     // 从天干数据中提取所有 time 字段作为选项
     final allTimes = tianGan.map((g) => g["hour"]!).toList();
@@ -375,16 +422,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$gan 对应的时辰是？",
+      text: "$resolved 对应的时辰是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'gan_time',
+      input: resolved,
     );
   }
 
   /// 地支时辰题目生成器
-  static Question generateZhiTimeQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiHour(zhi);
+  static Question generateZhiTimeQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getZhiHour(resolved);
 
     // 从地支数据中提取所有 time 字段作为选项
     final allTimes = diZhi.map((d) => d["hour"]!).toList();
@@ -396,16 +445,18 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$zhi 对应的时辰是？",
+      text: "$resolved 对应的时辰是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_time',
+      input: resolved,
     );
   }
 
   /// 地支小时题目生成器
-  static Question generateZhiHourQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiHour(zhi);
+  static Question generateZhiHourQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getZhiHour(resolved);
 
     // 从地支数据中提取所有 hour 字段作为选项
     final allHours = diZhi.map((d) => d["hour"]!).toList();
@@ -417,18 +468,20 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$zhi 对应的时间段是？",
+      text: "$resolved 对应的时间段是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'zhi_hour',
+      input: resolved,
     );
   }
 
   // ========== 地支指诀题目生成器 ==========
 
   /// 正向指诀：从地支选指节
-  static Question generateFingerJointForwardQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final correct = getZhiFingerJoint(zhi);
+  static Question generateFingerJointForwardQuestion({String? zhi}) {
+    final resolved = zhi ?? diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    final correct = getZhiFingerJoint(resolved);
 
     // 获取所有指节选项
     final allFingerJoints = [
@@ -454,17 +507,26 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "$zhi 对应的指节是？",
+      text: "$resolved 对应的指节是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'finger_forward',
+      input: resolved,
     );
   }
 
   /// 反向指诀：从指节选地支
-  static Question generateFingerJointReverseQuestion() {
-    final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    final fingerJoint = getZhiFingerJoint(zhi);
-    final correct = zhi;
+  static Question generateFingerJointReverseQuestion({String? input}) {
+    final String fingerJoint;
+    final String correct;
+    if (input != null) {
+      fingerJoint = input;
+      correct = getFingerJointZhi(input);
+    } else {
+      final zhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+      fingerJoint = getZhiFingerJoint(zhi);
+      correct = zhi;
+    }
 
     // 获取所有地支选项
     final allZhi = diZhi.map((d) => d["name"]!).toList();
@@ -480,22 +542,33 @@ class Questions {
       text: "$fingerJoint 对应的地支是？",
       options: options,
       correctAnswer: correct,
+      questionType: 'finger_reverse',
+      input: fingerJoint,
     );
   }
 
   // ========== 十二长生题目生成器 ==========
 
   /// 十二长生题目生成器
-  static Question generateChangShengQuestion() {
-    // 随机一个"日支"作为卜日
-    final riZhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
-    // 随机一个"爻地支"
-    final yaoZhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+  /// [input] 格式为「日支_爻支」，与 getWuXingChangSheng 的参数顺序一致。
+  static Question generateChangShengQuestion({String? input}) {
+    final String riZhi;
+    final String yaoZhi;
+    if (input != null && input.contains('_')) {
+      final parts = input.split('_');
+      riZhi = parts.first;
+      yaoZhi = parts.sublist(1).join('_');
+    } else {
+      // 随机一个"日支"作为卜日
+      riZhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+      // 随机一个"爻地支"
+      yaoZhi = diZhi[_rnd.nextInt(diZhi.length)]["name"]!;
+    }
 
     final correct = getWuXingChangSheng(riZhi, yaoZhi);
 
-    // 如果正确答案是"未知"，重新生成题目
-    if (correct == "未知") {
+    // 如果正确答案是"未知"，重新生成题目。指定了输入时不再重试，避免死循环。
+    if (correct == "未知" && input == null) {
       return generateChangShengQuestion();
     }
 
@@ -510,17 +583,21 @@ class Questions {
       text: "若日支为『$riZhi』，某爻地支为『$yaoZhi』，此爻处于十二长生的哪一阶段？",
       options: options,
       correctAnswer: correct,
+      questionType: 'changsheng',
+      input: '${riZhi}_$yaoZhi',
     );
   }
 
   // ========== 五行生克题目生成器 ==========
 
   /// 五行生题目生成器
-  static Question generateWuXingShengQuestion() {
+  static Question generateWuXingShengQuestion({String? wuxing}) {
     final wuXingList = ["木", "火", "土", "金", "水"];
-    final wuXing = wuXingList[_rnd.nextInt(wuXingList.length)];
+    final resolved = (wuxing != null && wuXingList.contains(wuxing))
+        ? wuxing
+        : wuXingList[_rnd.nextInt(wuXingList.length)];
 
-    final correct = wuXingSheng[wuXing]!;
+    final correct = wuXingSheng[resolved]!;
 
     final wrongOptions = List<String>.from(wuXingList)..remove(correct);
     wrongOptions.shuffle(_rnd);
@@ -529,18 +606,22 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "五行 $wuXing 所生的是什么五行？",
+      text: "五行 $resolved 所生的是什么五行？",
       options: options,
       correctAnswer: correct,
+      questionType: 'wuxing_sheng',
+      input: resolved,
     );
   }
 
   /// 五行克题目生成器
-  static Question generateWuXingKeQuestion() {
+  static Question generateWuXingKeQuestion({String? wuxing}) {
     final wuXingList = ["木", "火", "土", "金", "水"];
-    final wuXing = wuXingList[_rnd.nextInt(wuXingList.length)];
+    final resolved = (wuxing != null && wuXingList.contains(wuxing))
+        ? wuxing
+        : wuXingList[_rnd.nextInt(wuXingList.length)];
 
-    final correct = wuXingKe[wuXing]!;
+    final correct = wuXingKe[resolved]!;
 
     final wrongOptions = List<String>.from(wuXingList)..remove(correct);
     wrongOptions.shuffle(_rnd);
@@ -549,9 +630,11 @@ class Questions {
     options.shuffle(_rnd);
 
     return Question(
-      text: "五行 $wuXing 所克的是什么五行？",
+      text: "五行 $resolved 所克的是什么五行？",
       options: options,
       correctAnswer: correct,
+      questionType: 'wuxing_ke',
+      input: resolved,
     );
   }
 
@@ -560,20 +643,20 @@ class Questions {
   /// 天干地支综合题目生成器
   static Question generateTianGanDizhiComprehensiveQuestion() {
     // 题型生成器池子
-    final generators = [
-      generateGanWuXingQuestion, // 天干五行
-      generateZhiWuXingQuestion, // 地支五行
-      generateGanYinYangQuestion, // 天干阴阳
-      generateZhiYinYangQuestion, // 地支阴阳
-      generateGanDirectionQuestion, // 天干方位
-      generateZhiDirectionQuestion, // 地支方位
-      generateGanSeasonQuestion, // 天干季节
-      generateZhiSeasonQuestion, // 地支季节
-      generateGanMonthQuestion, // 天干月份
-      generateZhiMonthQuestion, // 地支月份
-      generateGanTimeQuestion, // 天干时间
-      generateZhiTimeQuestion, // 地支时间
-      generateZhiHourQuestion, // 地支小时
+    final generators = <Question Function()>[
+      () => generateGanWuXingQuestion(), // 天干五行
+      () => generateZhiWuXingQuestion(), // 地支五行
+      () => generateGanYinYangQuestion(), // 天干阴阳
+      () => generateZhiYinYangQuestion(), // 地支阴阳
+      () => generateGanDirectionQuestion(), // 天干方位
+      () => generateZhiDirectionQuestion(), // 地支方位
+      () => generateGanSeasonQuestion(), // 天干季节
+      () => generateZhiSeasonQuestion(), // 地支季节
+      () => generateGanMonthQuestion(), // 天干月份
+      () => generateZhiMonthQuestion(), // 地支月份
+      () => generateGanTimeQuestion(), // 天干时间
+      () => generateZhiTimeQuestion(), // 地支时间
+      () => generateZhiHourQuestion(), // 地支小时
     ];
 
     // 随机选择一个生成器
@@ -609,6 +692,8 @@ class Questions {
       text: "卦「$correctGua」的卦象是哪个？",
       options: options,
       correctAnswer: correctXiang,
+      questionType: 'gua_to_xiang',
+      input: correctGua,
     );
   }
 
@@ -638,6 +723,8 @@ class Questions {
       text: "卦象「$correctXiang」对应的卦名是哪个？",
       options: options,
       correctAnswer: correctGua,
+      questionType: 'xiang_to_gua',
+      input: correctXiang,
     );
   }
 

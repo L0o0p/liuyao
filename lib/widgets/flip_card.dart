@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/question.dart';
 
 class FlipCard extends StatefulWidget {
@@ -6,11 +7,15 @@ class FlipCard extends StatefulWidget {
   final VoidCallback? onCorrectAnswer;
   final void Function(String userAnswer)? onWrongAnswer;
 
+  /// 答错后点击「下一题」，由外部页面负责翻页
+  final VoidCallback? onNext;
+
   const FlipCard({
     super.key,
     required this.question,
     this.onCorrectAnswer,
     this.onWrongAnswer,
+    this.onNext,
   });
 
   @override
@@ -21,6 +26,7 @@ class _FlipCardState extends State<FlipCard> {
   String? selectedOption;
   bool hasAnswered = false;
   bool isCorrect = false;
+  bool hasRequestedNext = false;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +122,12 @@ class _FlipCardState extends State<FlipCard> {
                                   option == widget.question.correctAnswer;
                             });
 
+                            if (isCorrect) {
+                              HapticFeedback.lightImpact();
+                            } else {
+                              HapticFeedback.mediumImpact();
+                            }
+
                             // 如果答案正确，延迟一下显示反馈，然后自动翻页
                             if (isCorrect && widget.onCorrectAnswer != null) {
                               Future.delayed(
@@ -209,6 +221,35 @@ class _FlipCardState extends State<FlipCard> {
                     ],
                   ),
                 ),
+                // 答错时由用户确认看清答案后再进入下一题
+                if (!isCorrect && widget.onNext != null) ...[
+                  SizedBox(height: isSmallScreen ? 12.0 : 16.0),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: hasRequestedNext
+                          ? null
+                          : () {
+                              setState(() {
+                                hasRequestedNext = true;
+                              });
+                              widget.onNext!();
+                            },
+                      style: FilledButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          vertical: isSmallScreen ? 12.0 : 16.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        '下一题',
+                        style: TextStyle(fontSize: buttonFontSize),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ],
           ),

@@ -1,98 +1,43 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 import '../models/module_progress.dart';
 import '../models/wrong_question_record.dart';
-import 'cloudkit_storage_service.dart';
-import 'apple_auth_service.dart';
+import 'local_store.dart';
 
-/// 混合存储服务
+/// 本地存储服务
 /// 负责管理用户学习进度和错题记录的持久化存储
-/// 支持本地存储（SharedPreferences）和云端同步（CloudKit）
 ///
 /// 设计思路：
-/// 1. 学习进度：按模块ID存储（module_progress_xxx）
-/// 2. 错题记录：统一存储所有错题（wrong_questions）
-/// 3. 云端同步：如果用户已登录 Apple ID，自动同步到 CloudKit
-/// 4. 离线优先：本地存储为主，云端同步为辅
+/// 1. 学习进度：按模块拆成 progress:{moduleId}
+/// 2. 错题记录：按题型和输入拆成 wrong:{questionType}:{input}
+/// 3. 每条数据都带 updatedAt，删除用删除标记，方便以后同步
+/// 4. 对外方法签名保持不变，界面层不用跟着改
 class StorageService {
-  static const String _keyPrefix = 'module_progress_';
-  static const String _wrongQuestionsKey = 'wrong_questions';
-  static const String _lastSyncKey = 'last_sync_timestamp';
-
-  static bool _isCloudKitEnabled = false;
-  static bool _isAppleSignedIn = false;
-
-  /// 初始化存储服务
-  /// 检查 Apple 登录状态和 CloudKit 可用性
+  /// 启动时把旧版 SharedPreferences 数据迁到新键。
   static Future<void> initialize() async {
-    try {
-      // 检查设备是否支持Apple登录
-      final isAppleSignInAvailable =
-          await AppleAuthService.isAppleSignInAvailable();
-      // 检查用户是否已经登录
-      _isAppleSignedIn =
-          isAppleSignInAvailable && await AppleAuthService.isUserSignedIn();
-
-      if (_isAppleSignedIn) {
-        _isCloudKitEnabled = await CloudKitStorageService.isCloudKitAvailable();
-      }
-
-      if (kDebugMode) {
-        print('StorageService 初始化完成:');
-        print('  Apple 登录可用: $isAppleSignInAvailable');
-        print('  用户已登录: $_isAppleSignedIn');
-        print('  CloudKit 可用: $_isCloudKitEnabled');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('StorageService 初始化失败: $e');
-      }
-    }
+    await LocalStore.instance.migrateIfNeeded();
   }
 
-  /// 检查是否启用了云端同步
-  static bool get isCloudSyncEnabled => _isCloudKitEnabled && _isAppleSignedIn;
-
-  /// 保存模块进度到本地和云端
+  /// 保存模块进度
   /// @param progress 要保存的进度对象
   static Future<void> saveProgress(ModuleProgress progress) async {
-    // 首先保存到本地
-    final prefs = await SharedPreferences.getInstance();
-    final key = _keyPrefix + progress.moduleId;
-    final jsonString = jsonEncode(progress.toJson());
-    await prefs.setString(key, jsonString);
-
-    // 如果启用了云端同步，同时保存到 CloudKit
-    if (isCloudSyncEnabled) {
-      try {
-        await CloudKitStorageService.saveModuleProgress(progress);
-      } catch (e) {
-        if (kDebugMode) {
-          print('CloudKit 同步失败，但本地保存成功: $e');
-        }
-      }
-    }
+    progress.updatedAt = DateTime.now().millisecondsSinceEpoch;
+    await LocalStore.instance.put(
+      _progressKey(progress.moduleId),
+      progress.toJson(),
+    );
   }
 
   /// 从本地加载模块进度
   /// @param moduleId 模块ID
   /// @return 进度对象，如果不存在则返回新创建的默认进度
   static Future<ModuleProgress> loadProgress(String moduleId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _keyPrefix + moduleId;
-    final jsonString = prefs.getString(key);
-
-    if (jsonString == null) {
-      // 首次学习该模块，返回默认进度
+    final data = await LocalStore.instance.get(_progressKey(moduleId));
+    if (data == null || LocalStore.isDeleted(data)) {
       return ModuleProgress(moduleId: moduleId);
     }
 
     try {
-      final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      return ModuleProgress.fromJson(json);
+      return ModuleProgress.fromJson(data);
     } catch (e) {
-      // 解析失败，返回默认进度
       print('Failed to parse progress for $moduleId: $e');
       return ModuleProgress(moduleId: moduleId);
     }
@@ -101,19 +46,16 @@ class StorageService {
   /// 清除某个模块的进度（重置学习）
   /// @param moduleId 模块ID
   static Future<void> clearProgress(String moduleId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _keyPrefix + moduleId;
-    await prefs.remove(key);
+    await LocalStore.instance.delete(_progressKey(moduleId));
   }
 
   /// 清除所有模块的进度
   static Future<void> clearAllProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys();
+    final keys = await LocalStore.instance.keysWithPrefix(
+      LocalStore.progressPrefix,
+    );
     for (final key in keys) {
-      if (key.startsWith(_keyPrefix)) {
-        await prefs.remove(key);
-      }
+      await LocalStore.instance.delete(key);
     }
   }
 
@@ -131,69 +73,66 @@ class StorageService {
   /// 设计原理：
   /// - 如果该题已存在错题记录 → 增加错误次数
   /// - 如果是新错题 → 创建新记录
-  /// - 同时同步到 CloudKit（如果可用）
   ///
   /// @param record 错题记录
   static Future<void> recordWrongQuestion(WrongQuestionRecord record) async {
-    final allRecords = await loadWrongQuestions();
+    final key = _wrongKey(record.questionType, record.input);
+    final existing = await LocalStore.instance.get(key);
 
-    // 检查是否已存在该题的错题记录
-    final existingIndex = allRecords.indexWhere(
-      (r) => r.uniqueId == record.uniqueId,
-    );
-
-    WrongQuestionRecord recordToSync = record;
-    if (existingIndex != -1) {
-      // 已存在，更新错误次数
-      allRecords[existingIndex].incrementWrongCount(record.userAnswer);
-      recordToSync = allRecords[existingIndex];
+    final WrongQuestionRecord stored;
+    if (existing != null && !LocalStore.isDeleted(existing)) {
+      stored = WrongQuestionRecord.fromJson(existing);
+      stored.incrementWrongCount(record.userAnswer);
     } else {
-      // 新错题，添加到列表
-      allRecords.add(record);
+      stored = record;
     }
+    stored.updatedAt = DateTime.now().millisecondsSinceEpoch;
+    await LocalStore.instance.put(key, stored.toJson());
+  }
 
-    // 保存到本地
-    await _saveWrongQuestions(allRecords);
+  /// 在错题本中答对一次
+  /// 连续答对次数 +1，达到 [WrongQuestionRecord.requiredCorrectStreak] 时移出错题本
+  ///
+  /// @param record 错题记录
+  /// @return 更新后的连续答对次数；记录已不存在时返回 null
+  static Future<int?> recordWrongQuestionCorrect(
+    WrongQuestionRecord record,
+  ) async {
+    final key = _wrongKey(record.questionType, record.input);
+    final existing = await LocalStore.instance.get(key);
+    if (existing == null || LocalStore.isDeleted(existing)) return null;
 
-    // 如果启用了云端同步，同时保存到 CloudKit
-    if (isCloudSyncEnabled) {
-      try {
-        await CloudKitStorageService.saveWrongQuestion(recordToSync);
-      } catch (e) {
-        if (kDebugMode) {
-          print('CloudKit 错题同步失败，但本地保存成功: $e');
-        }
-      }
+    final stored = WrongQuestionRecord.fromJson(existing);
+    stored.correctStreak++;
+    if (stored.correctStreak >= WrongQuestionRecord.requiredCorrectStreak) {
+      await LocalStore.instance.delete(key);
+    } else {
+      stored.updatedAt = DateTime.now().millisecondsSinceEpoch;
+      await LocalStore.instance.put(key, stored.toJson());
     }
+    return stored.correctStreak;
   }
 
   /// 加载所有错题记录
   /// @return 错题记录列表（按最后答错时间倒序排列）
   static Future<List<WrongQuestionRecord>> loadWrongQuestions() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_wrongQuestionsKey);
+    final keys = await LocalStore.instance.keysWithPrefix(
+      LocalStore.wrongPrefix,
+    );
+    final records = <WrongQuestionRecord>[];
 
-    if (jsonString == null) {
-      return [];
+    for (final key in keys) {
+      final data = await LocalStore.instance.get(key);
+      if (data == null || LocalStore.isDeleted(data)) continue;
+      try {
+        records.add(WrongQuestionRecord.fromJson(data));
+      } catch (e) {
+        print('Failed to parse wrong question $key: $e');
+      }
     }
 
-    try {
-      final jsonList = jsonDecode(jsonString) as List<dynamic>;
-      final records = jsonList
-          .map(
-            (json) =>
-                WrongQuestionRecord.fromJson(json as Map<String, dynamic>),
-          )
-          .toList();
-
-      // 按最后答错时间倒序排列（最近的在前面）
-      records.sort((a, b) => b.lastWrongTime.compareTo(a.lastWrongTime));
-
-      return records;
-    } catch (e) {
-      print('Failed to parse wrong questions: $e');
-      return [];
-    }
+    records.sort((a, b) => b.lastWrongTime.compareTo(a.lastWrongTime));
+    return records;
   }
 
   /// 根据错误次数筛选错题
@@ -221,15 +160,31 @@ class StorageService {
   ///
   /// @param uniqueId 错题唯一标识
   static Future<void> removeWrongQuestion(String uniqueId) async {
-    final allRecords = await loadWrongQuestions();
-    allRecords.removeWhere((r) => r.uniqueId == uniqueId);
-    await _saveWrongQuestions(allRecords);
+    final keys = await LocalStore.instance.keysWithPrefix(
+      LocalStore.wrongPrefix,
+    );
+    for (final key in keys) {
+      final data = await LocalStore.instance.get(key);
+      if (data == null || LocalStore.isDeleted(data)) continue;
+      try {
+        final record = WrongQuestionRecord.fromJson(data);
+        if (record.uniqueId == uniqueId) {
+          await LocalStore.instance.delete(key);
+        }
+      } catch (e) {
+        print('Failed to remove wrong question $key: $e');
+      }
+    }
   }
 
   /// 清空所有错题记录
   static Future<void> clearWrongQuestions() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_wrongQuestionsKey);
+    final keys = await LocalStore.instance.keysWithPrefix(
+      LocalStore.wrongPrefix,
+    );
+    for (final key in keys) {
+      await LocalStore.instance.delete(key);
+    }
   }
 
   /// 获取错题统计信息
@@ -271,177 +226,9 @@ class StorageService {
     };
   }
 
-  /// 内部方法：保存错题记录列表
-  static Future<void> _saveWrongQuestions(
-    List<WrongQuestionRecord> records,
-  ) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = records.map((r) => r.toJson()).toList();
-    final jsonString = jsonEncode(jsonList);
-    await prefs.setString(_wrongQuestionsKey, jsonString);
-  }
+  static String _progressKey(String moduleId) =>
+      '${LocalStore.progressPrefix}$moduleId';
 
-  // ========== 云端同步功能 ==========
-
-  /// 启用 Apple 登录和 CloudKit 同步
-  /// @return 登录成功返回 true，失败返回 false
-  static Future<bool> enableCloudSync() async {
-    try {
-      final credential = await AppleAuthService.signInWithApple();
-      if (credential != null) {
-        _isAppleSignedIn = true;
-        _isCloudKitEnabled = await CloudKitStorageService.isCloudKitAvailable();
-
-        if (_isCloudKitEnabled) {
-          // 登录成功后，尝试同步数据
-          await syncToCloud();
-          return true;
-        }
-      }
-      return false;
-    } catch (e) {
-      if (kDebugMode) {
-        print('启用云端同步失败: $e');
-      }
-      return false;
-    }
-  }
-
-  /// 手动同步本地数据到云端
-  static Future<void> syncToCloud() async {
-    if (!isCloudSyncEnabled) {
-      if (kDebugMode) {
-        print('云端同步未启用，跳过同步');
-      }
-      return;
-    }
-
-    try {
-      // 同步所有模块进度
-      final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys();
-
-      for (final key in keys) {
-        if (key.startsWith(_keyPrefix)) {
-          final jsonString = prefs.getString(key);
-          if (jsonString != null) {
-            try {
-              final json = jsonDecode(jsonString) as Map<String, dynamic>;
-              final progress = ModuleProgress.fromJson(json);
-              await CloudKitStorageService.saveModuleProgress(progress);
-            } catch (e) {
-              if (kDebugMode) {
-                print('同步模块进度失败 $key: $e');
-              }
-            }
-          }
-        }
-      }
-
-      // 同步错题记录
-      final wrongQuestions = await loadWrongQuestions();
-      for (final record in wrongQuestions) {
-        try {
-          await CloudKitStorageService.saveWrongQuestion(record);
-        } catch (e) {
-          if (kDebugMode) {
-            print('同步错题记录失败: $e');
-          }
-        }
-      }
-
-      // 更新最后同步时间
-      await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
-
-      if (kDebugMode) {
-        print('✅ 云端同步完成');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ 云端同步失败: $e');
-      }
-    }
-  }
-
-  /// 从云端同步数据到本地
-  static Future<void> syncFromCloud() async {
-    if (!isCloudSyncEnabled) {
-      if (kDebugMode) {
-        print('云端同步未启用，跳过同步');
-      }
-      return;
-    }
-
-    try {
-      // 从云端获取模块进度
-      final cloudProgress = await CloudKitStorageService.fetchModuleProgress();
-      for (final progress in cloudProgress) {
-        await saveProgress(progress);
-      }
-
-      // 从云端获取错题记录
-      final cloudWrongQuestions =
-          await CloudKitStorageService.fetchWrongQuestions();
-      if (cloudWrongQuestions.isNotEmpty) {
-        final localRecords = await loadWrongQuestions();
-
-        // 合并云端和本地的错题记录
-        final mergedRecords = <String, WrongQuestionRecord>{};
-
-        // 先添加本地记录
-        for (final record in localRecords) {
-          mergedRecords[record.uniqueId] = record;
-        }
-
-        // 再添加云端记录，如果有冲突则保留最新的
-        for (final record in cloudWrongQuestions) {
-          final existing = mergedRecords[record.uniqueId];
-          if (existing == null ||
-              record.lastWrongTime.isAfter(existing.lastWrongTime)) {
-            mergedRecords[record.uniqueId] = record;
-          }
-        }
-
-        await _saveWrongQuestions(mergedRecords.values.toList());
-      }
-
-      // 更新最后同步时间
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
-
-      if (kDebugMode) {
-        print('✅ 从云端同步完成');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ 从云端同步失败: $e');
-      }
-    }
-  }
-
-  /// 获取最后同步时间
-  static Future<DateTime?> getLastSyncTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    final timestamp = prefs.getInt(_lastSyncKey);
-    return timestamp != null
-        ? DateTime.fromMillisecondsSinceEpoch(timestamp)
-        : null;
-  }
-
-  /// 禁用云端同步
-  static void disableCloudSync() {
-    _isAppleSignedIn = false;
-    _isCloudKitEnabled = false;
-  }
-
-  /// 退出登录并禁用云端同步
-  static Future<void> signOut() async {
-    await AppleAuthService.signOut();
-    _isAppleSignedIn = false;
-    _isCloudKitEnabled = false;
-
-    if (kDebugMode) {
-      print('用户已退出登录，云端同步已禁用');
-    }
-  }
+  static String _wrongKey(String questionType, String input) =>
+      '${LocalStore.wrongPrefix}$questionType:$input';
 }

@@ -3,6 +3,7 @@ import '../models/wrong_question_record.dart';
 import '../models/question.dart';
 import '../services/storage_service.dart';
 import '../services/question_reconstructor.dart';
+import '../services/sync/sync_engine.dart';
 import '../widgets/flip_card.dart';
 
 /// 错题复习页面
@@ -25,18 +26,28 @@ class _ReviewScreenState extends State<ReviewScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  /// 答错后尚未完成的提交，翻页前需要等它落盘
+  Future<void>? _pendingSubmission;
+
   @override
   void initState() {
     super.initState();
+    SyncEngine.dataVersion.addListener(_onDataChanged);
     _loadWrongQuestions();
     _pageController.addListener(_onPageChanged);
   }
 
   @override
   void dispose() {
+    SyncEngine.dataVersion.removeListener(_onDataChanged);
     _pageController.removeListener(_onPageChanged);
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _onDataChanged() {
+    if (!mounted) return;
+    _loadWrongQuestions();
   }
 
   void _onPageChanged() {
@@ -67,11 +78,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
         return;
       }
 
-      // 2. 从错题记录重建题目
+      // 2. 从错题记录重建题目，只保留重建成功的记录，保证两个列表下标一一对应
+      final validRecords = <WrongQuestionRecord>[];
       final questions = <Question>[];
       for (final record in records) {
         try {
           final question = QuestionReconstructor.reconstructFromRecord(record);
+          validRecords.add(record);
           questions.add(question);
         } catch (e) {
           print('重建题目失败: ${record.uniqueId}, 错误: $e');
@@ -79,9 +92,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
       }
 
       setState(() {
-        _wrongRecords = records;
+        _wrongRecords = validRecords;
         _questions = questions;
+        _currentPageIndex = 0;
         _isLoading = false;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_pageController.hasClients) return;
+        _pageController.jumpToPage(0);
       });
     } catch (e) {
       setState(() {
@@ -91,26 +110,55 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
   }
 
-  /// 处理答对：可选择移除错题（答对多次后）
+  /// 处理答对：连续答对次数 +1，达到要求后移出错题本
+  /// 本轮内列表不删除该题，等本轮结束重新加载时再消失，避免下标错位
   Future<void> _handleCorrectAnswer(int index) async {
-    // 这里可以实现更复杂的逻辑：
-    // - 例如：答对3次才移除
-    // - 或者：降低错题权重，但不删除
-    // 目前简单实现：答对后不删除，保留历史记录
+    try {
+      final record = _wrongRecords[index];
+      final streak = await StorageService.recordWrongQuestionCorrect(record);
+      if (streak != null && mounted) {
+        setState(() {
+          record.correctStreak = streak;
+        });
+        final remaining = WrongQuestionRecord.requiredCorrectStreak - streak;
+        _showHint(remaining <= 0 ? "已移出错题本" : "再答对 $remaining 次即可移出错题本");
+      }
+    } catch (e) {
+      print('更新错题失败: $e');
+    }
 
-    // 先自动翻页
+    if (!mounted) return;
+    _goToNext(index);
+  }
+
+  /// 翻到下一题，最后一题时显示完成对话框
+  Future<void> _goToNext(int index) async {
+    await _pendingSubmission;
+    if (!mounted) return;
     if (index < _questions.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
-      // 最后一题，显示完成对话框
       _showCompletionDialog();
     }
   }
 
-  /// 处理答错：增加错误次数
+  /// 底部轻提示
+  void _showHint(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// 处理答错：增加错误次数，连续答对次数清零
   Future<void> _handleWrongAnswer(int index, String userAnswer) async {
     try {
       final record = _wrongRecords[index];
@@ -123,10 +171,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
         userAnswer: userAnswer,
         wrongCount: record.wrongCount + 1,
         lastWrongTime: DateTime.now(),
+        correctStreak: 0,
       );
 
       await StorageService.recordWrongQuestion(updatedRecord);
 
+      if (!mounted) return;
       // 更新本地记录
       setState(() {
         _wrongRecords[index] = updatedRecord;
@@ -142,15 +192,18 @@ class _ReviewScreenState extends State<ReviewScreen> {
   void _showCompletionDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text("🎉 完成错题复习"),
         content: const Text("恭喜完成本轮错题复习！"),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // 只关闭对话框
+              Navigator.of(context).pop();
               // 注意：ReviewScreen 是通过底部导航栏显示的，不是通过 push 打开的
               // 所以不需要再 pop 一次，用户可以通过底部导航栏切换到其他页面
+              // 重新加载，让已移出错题本的题目从列表消失
+              _loadWrongQuestions();
             },
             child: const Text("知道了"),
           ),
@@ -335,7 +388,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ),
                       ),
                       Text(
-                        "错误 ${_wrongRecords[_currentPageIndex].wrongCount} 次",
+                        "错误 ${_wrongRecords[_currentPageIndex].wrongCount} 次"
+                        " · 连续答对 ${_wrongRecords[_currentPageIndex].correctStreak}"
+                        "/${WrongQuestionRecord.requiredCorrectStreak}",
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -352,13 +407,17 @@ class _ReviewScreenState extends State<ReviewScreen> {
           Expanded(
             child: PageView.builder(
               controller: _pageController,
+              // 单向推进，只能答完后由程序翻到下一题
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: _questions.length,
               itemBuilder: (context, index) {
                 return FlipCard(
                   question: _questions[index],
                   onCorrectAnswer: () => _handleCorrectAnswer(index),
-                  onWrongAnswer: (userAnswer) =>
-                      _handleWrongAnswer(index, userAnswer),
+                  onWrongAnswer: (userAnswer) {
+                    _pendingSubmission = _handleWrongAnswer(index, userAnswer);
+                  },
+                  onNext: () => _goToNext(index),
                 );
               },
             ),
@@ -377,13 +436,25 @@ class _ReviewScreenState extends State<ReviewScreen> {
       'zhi_yinyang': '地支阴阳',
       'gan_direction': '天干方位',
       'zhi_direction': '地支方位',
+      'gan_season': '天干季节',
+      'zhi_season': '地支季节',
+      'gan_month': '天干月份',
+      'zhi_month': '地支月份',
+      'gan_time': '天干时间',
+      'zhi_time': '地支时间',
+      'zhi_hour': '地支时辰',
       'zhi_liuhe': '六合',
+      'zhi_sanhe': '三合',
+      'zhi_sanxing': '三刑',
+      'zhi_zixing': '自刑',
       'zhi_liuchong': '六冲',
       'zhi_liuhai': '六害',
       'zhi_poxiang': '相破',
       'finger_forward': '地支指诀',
+      'finger_reverse': '指诀反查',
       'wuxing_sheng': '五行相生',
       'wuxing_ke': '五行相克',
+      'changsheng': '十二长生',
       'gua_to_xiang': '六十四卦',
       'xiang_to_gua': '六十四卦',
     };

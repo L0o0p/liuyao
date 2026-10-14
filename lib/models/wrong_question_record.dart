@@ -25,6 +25,15 @@ class WrongQuestionRecord {
   /// 最后一次答错的时间
   DateTime lastWrongTime;
 
+  /// 最近一次变更的毫秒时间戳。旧数据没有该字段时为 0。
+  int updatedAt;
+
+  /// 在错题本中连续答对的次数，答错时清零。旧数据没有该字段时为 0。
+  int correctStreak;
+
+  /// 连续答对多少次后移出错题本
+  static const int requiredCorrectStreak = 2;
+
   WrongQuestionRecord({
     required this.questionType,
     required this.input,
@@ -32,6 +41,8 @@ class WrongQuestionRecord {
     required this.userAnswer,
     this.wrongCount = 1,
     DateTime? lastWrongTime,
+    this.updatedAt = 0,
+    this.correctStreak = 0,
   }) : lastWrongTime = lastWrongTime ?? DateTime.now();
 
   /// 生成唯一标识符（用于存储和查重）
@@ -43,6 +54,7 @@ class WrongQuestionRecord {
     wrongCount++;
     userAnswer = newUserAnswer;
     lastWrongTime = DateTime.now();
+    correctStreak = 0;
   }
 
   /// 序列化为 JSON
@@ -54,6 +66,8 @@ class WrongQuestionRecord {
       'userAnswer': userAnswer,
       'wrongCount': wrongCount,
       'lastWrongTime': lastWrongTime.toIso8601String(),
+      'updatedAt': updatedAt,
+      'correctStreak': correctStreak,
     };
   }
 
@@ -66,6 +80,8 @@ class WrongQuestionRecord {
       userAnswer: json['userAnswer'] as String,
       wrongCount: json['wrongCount'] as int,
       lastWrongTime: DateTime.parse(json['lastWrongTime'] as String),
+      updatedAt: (json['updatedAt'] as num?)?.toInt() ?? 0,
+      correctStreak: (json['correctStreak'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -75,4 +91,3 @@ class WrongQuestionRecord {
         'wrongCount: $wrongCount, lastWrong: $lastWrongTime)';
   }
 }
-

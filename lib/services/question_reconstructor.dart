@@ -21,9 +21,18 @@ class QuestionReconstructor {
   /// @param record 错题记录
   /// @return 重建的题目对象
   static Question reconstructFromRecord(WrongQuestionRecord record) {
-    final input = record.input;
-    final type = record.questionType;
+    final built = _buildByType(record.questionType, record.input);
+    return Question(
+      text: built.text,
+      options: built.options,
+      correctAnswer: built.correctAnswer,
+      questionType: record.questionType,
+      input: record.input,
+    );
+  }
 
+  /// 按题型重建题干和选项。题型字符串与这里的 switch 保持一致。
+  static Question _buildByType(String type, String input) {
     // 根据题目类型调用相应的重建函数
     switch (type) {
       // 天干相关

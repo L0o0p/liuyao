@@ -1,7 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/module_progress.dart';
 import '../services/storage_service.dart';
-import '../widgets/apple_sign_in_button.dart';
+import '../services/sync/sync_engine.dart';
 import 'study_module_screen.dart';
 
 /// 进度页面
@@ -42,6 +47,18 @@ class _ProgressScreenState extends State<ProgressScreen> {
       color: Colors.purple,
     ),
     ModuleConfig(
+      id: 'tiangandizhi_shengke',
+      name: '五行生克',
+      icon: Icons.sync_alt,
+      color: Colors.lightGreen,
+    ),
+    ModuleConfig(
+      id: 'tiangandizhi_comprehensive',
+      name: '天干地支综合练习',
+      icon: Icons.quiz,
+      color: Colors.cyan,
+    ),
+    ModuleConfig(
       id: 'wuxing',
       name: '十二支指诀',
       icon: Icons.psychology,
@@ -65,23 +82,44 @@ class _ProgressScreenState extends State<ProgressScreen> {
       icon: Icons.grain,
       color: Colors.brown,
     ),
+    ModuleConfig(
+      id: 'comprehensive',
+      name: '综合练习',
+      icon: Icons.quiz,
+      color: Colors.blueGrey,
+    ),
   ];
 
   /// 存储所有模块的进度数据
   Map<String, ModuleProgress> _progressMap = {};
   bool _isLoading = true;
+  bool _isTransferring = false;
 
   @override
   void initState() {
     super.initState();
+    SyncEngine.dataVersion.addListener(_onDataChanged);
     _loadAllProgress();
   }
 
+  @override
+  void dispose() {
+    SyncEngine.dataVersion.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    if (!mounted) return;
+    _loadAllProgress(showLoading: false);
+  }
+
   /// 加载所有模块的进度数据
-  Future<void> _loadAllProgress() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _loadAllProgress({bool showLoading = true}) async {
+    if (showLoading && mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     final Map<String, ModuleProgress> progressMap = {};
     for (final module in _modules) {
@@ -89,10 +127,105 @@ class _ProgressScreenState extends State<ProgressScreen> {
       progressMap[module.id] = progress;
     }
 
+    if (!mounted) return;
     setState(() {
       _progressMap = progressMap;
       _isLoading = false;
     });
+  }
+
+  /// 导出进度和错题，交给系统分享面板。
+  Future<void> _exportLearningData() async {
+    if (_isTransferring) return;
+    setState(() {
+      _isTransferring = true;
+    });
+    try {
+      final document = await SyncEngine.instance.exportDocument();
+      final file = File(
+        '${Directory.systemTemp.path}/liuyao-learning-data.json',
+      );
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(document),
+      );
+      if (!mounted) return;
+      final box = context.findRenderObject();
+      final origin = box is RenderBox && box.hasSize
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'application/json')],
+          subject: '六爻学习数据',
+          sharePositionOrigin: origin,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('导出失败：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTransferring = false;
+        });
+      }
+    }
+  }
+
+  /// 选择导出文件，按合并规则导入，不覆盖本地较新的数据。
+  Future<void> _importLearningData() async {
+    if (_isTransferring) return;
+    setState(() {
+      _isTransferring = true;
+    });
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final picked = result.files.single;
+      final String raw;
+      if (picked.bytes != null) {
+        raw = utf8.decode(picked.bytes!);
+      } else if (picked.path != null) {
+        raw = await File(picked.path!).readAsString();
+      } else {
+        throw const FormatException('无法读取所选文件');
+      }
+
+      final summary = await SyncEngine.instance.importJson(raw);
+      await _loadAllProgress(showLoading: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已导入 ${summary.applied} 条，本地保留 ${summary.keptLocal} 条'),
+        ),
+      );
+    } on FormatException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('导入失败：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTransferring = false;
+        });
+      }
+    }
   }
 
   /// 计算总体统计数据
@@ -194,7 +327,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // 云端同步区域
+            // 学习数据导出 / 导入
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -207,94 +340,37 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         Row(
                           children: [
                             Icon(
-                              Icons.cloud,
+                              Icons.folder_outlined,
                               color: Theme.of(context).primaryColor,
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '云端同步',
+                              '学习数据',
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
-                            const Spacer(),
-                            const CloudSyncIndicator(),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        if (!StorageService.isCloudSyncEnabled) ...[
-                          const Text(
-                            '登录 Apple ID 即可将学习进度同步到云端，在多个设备间保持数据一致。',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 12),
-                          AppleSignInButton(
-                            onSignInSuccess: () {
-                              if (mounted) {
-                                setState(() {
-                                  // 刷新页面状态，这会触发整个页面重新构建
-                                });
-                                _loadAllProgress();
-                              }
-                            },
-                            onSignOut: () {
-                              if (mounted) {
-                                setState(() {
-                                  // 刷新页面状态，显示登录按钮
-                                });
-                              }
-                            },
-                          ),
-                        ] else ...[
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  '已启用云端同步，您的学习进度会自动保存到云端。',
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              ),
-                              const SyncButton(),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          AppleSignInButton(
-                            onSignOut: () {
-                              if (mounted) {
-                                setState(() {
-                                  // 刷新页面状态，显示登录按钮
-                                });
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          FutureBuilder<DateTime?>(
-                            future: StorageService.getLastSyncTime(),
-                            builder: (context, snapshot) {
-                              final lastSync = snapshot.data;
-                              if (lastSync != null) {
-                                final now = DateTime.now();
-                                final diff = now.difference(lastSync);
-                                String timeAgo;
-                                if (diff.inMinutes < 1) {
-                                  timeAgo = '刚刚';
-                                } else if (diff.inHours < 1) {
-                                  timeAgo = '${diff.inMinutes}分钟前';
-                                } else if (diff.inDays < 1) {
-                                  timeAgo = '${diff.inHours}小时前';
-                                } else {
-                                  timeAgo = '${diff.inDays}天前';
-                                }
-                                return Text(
-                                  '最后同步: $timeAgo',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ],
+                        const Text(
+                          '可导出到文件，换机时再导入。导入会与本机数据合并，不会覆盖较新的记录。',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _isTransferring
+                              ? null
+                              : _exportLearningData,
+                          icon: const Icon(Icons.ios_share),
+                          label: const Text('导出学习数据'),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _isTransferring
+                              ? null
+                              : _importLearningData,
+                          icon: const Icon(Icons.file_open_outlined),
+                          label: const Text('导入学习数据'),
+                        ),
                       ],
                     ),
                   ),

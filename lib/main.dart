@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'screens/learn_screen.dart';
 import 'screens/review_screen.dart';
 import 'screens/progress_screen.dart';
 import 'services/storage_service.dart';
+import 'services/sync/sync_engine.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化存储服务
+  // 先完成旧数据迁移，再进入界面
   await StorageService.initialize();
 
   runApp(const MyApp());
+
+  // 启动后尝试同步。失败不能挡住界面。
+  unawaited(SyncEngine.instance.sync());
 }
 
 class MyApp extends StatelessWidget {
@@ -113,7 +119,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _selectedIndex = 1; // 默认选中学习页面（中间位置）
 
   final List<Widget> _pages = const [
@@ -121,6 +127,26 @@ class _HomePageState extends State<HomePage> {
     LearnScreen(), // 学习 - 中间位置
     ProgressScreen(), // 进度 - 第三个位置
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 回到前台时再试一次同步，失败静默
+    if (state == AppLifecycleState.resumed) {
+      unawaited(SyncEngine.instance.sync());
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {

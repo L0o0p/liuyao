@@ -22,6 +22,9 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
   int _currentPageIndex = 0;
   bool _isLoading = true;
 
+  /// 答错后尚未完成的提交，点「下一题」前需要等它落盘
+  Future<void>? _pendingSubmission;
+
   @override
   void initState() {
     super.initState();
@@ -96,6 +99,8 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
         return "时间对应";
       case 'tiangandizhi_shengke':
         return "五行生克";
+      case 'tiangandizhi_comprehensive':
+        return "天干地支综合练习";
       case '64gua':
         return "六十四卦";
       default:
@@ -113,28 +118,33 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
   }
 
   /// 记录错题
-  /// 使用题目推断算法自动识别题目类型和输入参数
+  /// 题目自带题型和输入时直接使用；旧题表没有这两个字段时，再从题干反推。
   Future<void> _recordWrongQuestion(
     Question question,
     String userAnswer,
   ) async {
     try {
-      // 尝试从题目内容推断题目类型和输入参数
-      final info = QuestionReconstructor.inferQuestionTypeAndInput(question);
-
-      if (info != null) {
-        final record = WrongQuestionRecord(
-          questionType: info['questionType']!,
-          input: info['input']!,
-          correctAnswer: question.correctAnswer,
-          userAnswer: userAnswer,
-        );
-
-        await StorageService.recordWrongQuestion(record);
-        print('✓ 已记录错题: ${record.questionType} - ${record.input}');
-      } else {
-        print('⚠ 无法识别题目类型，未记录错题: ${question.text}');
+      var questionType = question.questionType;
+      var input = question.input;
+      if (questionType.isEmpty || input.isEmpty) {
+        final info = QuestionReconstructor.inferQuestionTypeAndInput(question);
+        if (info == null) {
+          print('⚠ 无法识别题目类型，未记录错题: ${question.text}');
+          return;
+        }
+        questionType = info['questionType']!;
+        input = info['input']!;
       }
+
+      final record = WrongQuestionRecord(
+        questionType: questionType,
+        input: input,
+        correctAnswer: question.correctAnswer,
+        userAnswer: userAnswer,
+      );
+
+      await StorageService.recordWrongQuestion(record);
+      print('✓ 已记录错题: ${record.questionType} - ${record.input}');
     } catch (e) {
       print('✗ 记录错题失败: $e');
     }
@@ -150,6 +160,7 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
     // 显示完成提示
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text("🎉 完成本轮学习"),
         content: Text(
@@ -183,6 +194,7 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
     bool isCorrect, {
     String? userAnswer,
   }) async {
+    if (index != _roundManager.currentIndex) return;
     await _roundManager.submitAnswer(index, isCorrect);
 
     if (!isCorrect && userAnswer != null) {
@@ -191,6 +203,17 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
 
     if (!mounted) return;
     setState(() {});
+
+    // 答错时等用户点「下一题」再推进
+    if (isCorrect) {
+      await _advance();
+    }
+  }
+
+  /// 推进到下一题：本轮完成、分组休息或翻页
+  Future<void> _advance() async {
+    await _pendingSubmission;
+    if (!mounted) return;
 
     if (_roundManager.isCurrentRoundAnswered) {
       await _onRoundComplete();
@@ -202,7 +225,8 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
       return;
     }
 
-    if (isCorrect && index < questions.length - 1) {
+    if (_pageController.hasClients &&
+        _currentPageIndex < _roundManager.currentIndex) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeInOut,
@@ -351,6 +375,8 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
                   Expanded(
                     child: PageView.builder(
                       controller: _pageController,
+                      // 单向推进，只能答完后由程序翻到下一题
+                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: questions.length,
                       itemBuilder: (context, index) {
                         final q = questions[index];
@@ -359,14 +385,15 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
                           onCorrectAnswer: () async {
                             await _onAnswerSubmitted(index, q, true);
                           },
-                          onWrongAnswer: (userAnswer) async {
-                            await _onAnswerSubmitted(
+                          onWrongAnswer: (userAnswer) {
+                            _pendingSubmission = _onAnswerSubmitted(
                               index,
                               q,
                               false,
                               userAnswer: userAnswer,
                             );
                           },
+                          onNext: _advance,
                         );
                       },
                     ),

@@ -42,6 +42,9 @@ class ModuleProgress {
   /// 当前分组内答错数量
   int currentPartWrongCount;
 
+  /// 最近一次变更的毫秒时间戳。旧数据没有该字段时为 0。
+  int updatedAt;
+
   ModuleProgress({
     required this.moduleId,
     this.firstRoundCompleted = false,
@@ -53,6 +56,7 @@ class ModuleProgress {
     List<Question>? currentRoundQuestions,
     this.currentPartCorrectCount = 0,
     this.currentPartWrongCount = 0,
+    this.updatedAt = 0,
   }) : learnedItems = learnedItems ?? [],
        proficiency = proficiency ?? {},
        currentRoundQuestions = currentRoundQuestions ?? [];
@@ -82,6 +86,7 @@ class ModuleProgress {
           [],
       currentPartCorrectCount: json['currentPartCorrectCount'] as int? ?? 0,
       currentPartWrongCount: json['currentPartWrongCount'] as int? ?? 0,
+      updatedAt: (json['updatedAt'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -100,6 +105,7 @@ class ModuleProgress {
           .toList(),
       'currentPartCorrectCount': currentPartCorrectCount,
       'currentPartWrongCount': currentPartWrongCount,
+      'updatedAt': updatedAt,
     };
   }
 
