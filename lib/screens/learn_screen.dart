@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/knowledge_catalog.dart';
 import 'study_module_screen.dart';
 import 'tiangan_dizhi_submenu_screen.dart';
 
@@ -28,13 +29,7 @@ class LearnScreen extends StatelessWidget {
                   // 添加滚动支持
                   child: Column(
                     children: [
-                      _buildModuleButton(
-                        context,
-                        title: "六十四卦",
-                        subtitle: "速记六十四卦卦象",
-                        icon: Icons.auto_stories,
-                        onTap: () => _navigateToModule(context, '64gua'),
-                      ),
+                      _buildCatalogButton(context, '64gua'),
                       _buildModuleButton(
                         context,
                         title: "天干地支基础",
@@ -42,41 +37,13 @@ class LearnScreen extends StatelessWidget {
                         icon: Icons.auto_stories,
                         onTap: () => _navigateToSubmenu(context),
                       ),
-                      const SizedBox(height: 12), // 减少间距
-                      _buildModuleButton(
-                        context,
-                        title: "十二支指诀",
-                        subtitle: "地支对应手指关节的快速记忆法",
-                        icon: Icons.psychology,
-                        onTap: () => _navigateToModule(context, 'wuxing'),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildModuleButton(
-                        context,
-                        title: "刑冲合害",
-                        subtitle: "判断人事关系、事情走向的规则",
-                        icon: Icons.compare_arrows,
-                        onTap: () => _navigateToModule(context, 'hechong'),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildModuleButton(
-                        context,
-                        title: "十二长生",
-                        subtitle: "用来判断某个爻（事物）的旺衰强弱",
-                        icon: Icons.timeline,
-                        onTap: () =>
-                            _navigateToModule(context, 'shierchangsheng'),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildModuleButton(
-                        context,
-                        title: "综合练习",
-                        subtitle: "混合各种题型，全面复习",
-                        icon: Icons.quiz,
-                        onTap: () =>
-                            _navigateToModule(context, 'comprehensive'),
-                      ),
-                      const SizedBox(height: 16), // 底部额外间距
+                      for (final id in KnowledgeCatalog.learnRootIds.skip(
+                        1,
+                      )) ...[
+                        const SizedBox(height: 12),
+                        _buildCatalogButton(context, id),
+                      ],
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -165,6 +132,34 @@ class LearnScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildCatalogButton(BuildContext context, String id) {
+    final module = KnowledgeCatalog.module(id)!;
+    return _buildModuleButton(
+      context,
+      title: module.name,
+      subtitle: module.subtitle,
+      icon: _learnIcon(id),
+      onTap: () => _navigateToModule(context, id),
+    );
+  }
+
+  IconData _learnIcon(String id) {
+    switch (id) {
+      case '64gua':
+        return Icons.auto_stories;
+      case 'wuxing':
+        return Icons.psychology;
+      case 'hechong':
+        return Icons.compare_arrows;
+      case 'shierchangsheng':
+        return Icons.timeline;
+      case 'comprehensive':
+        return Icons.quiz;
+      default:
+        return Icons.auto_stories;
+    }
   }
 
   void _navigateToSubmenu(BuildContext context) {

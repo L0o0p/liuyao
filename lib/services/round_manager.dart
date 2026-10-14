@@ -3,12 +3,9 @@ import 'dart:math';
 import '../models/question.dart';
 import '../models/module_progress.dart';
 import 'storage_service.dart';
-import 'questions.dart';
 import 'sync/sync_engine.dart';
-import '../data/tian_gan.dart';
-import '../data/di_zhi.dart';
 import '../data/gua_data.dart';
-import '../data/wu_xing.dart';
+import '../data/knowledge_catalog.dart';
 import '../data/zhi_relations.dart';
 
 /// 题表管理器
@@ -18,19 +15,12 @@ import '../data/zhi_relations.dart';
 /// 3. 复习模式：根据熟练度和随机策略生成题目
 /// 4. 管理学习进度的持久化
 class RoundManager {
-  static const int guaFirstRoundPartSize = 16;
-
   /// 综合类模块每轮题数
   static const int comprehensiveRoundSize = 20;
 
   /// 综合练习的出题来源模块
-  static const List<String> comprehensiveSourceModules = [
-    'tiangandizhi_comprehensive',
-    'wuxing',
-    'hechong',
-    'shierchangsheng',
-    '64gua',
-  ];
+  static List<String> get comprehensiveSourceModules =>
+      KnowledgeCatalog.module('comprehensive')!.sourceModuleIds;
 
   final String moduleId;
   late ModuleProgress _progress;
@@ -69,11 +59,13 @@ class RoundManager {
 
   /// 当前模块首轮是否需要按组学习
   bool get usesFirstRoundParts =>
-      moduleId == '64gua' && !_progress.firstRoundCompleted;
+      KnowledgeCatalog.module(moduleId)?.partSize != null &&
+      !_progress.firstRoundCompleted;
 
   /// 当前分组题数
-  int get partSize =>
-      usesFirstRoundParts ? guaFirstRoundPartSize : questions.length;
+  int get partSize => usesFirstRoundParts
+      ? KnowledgeCatalog.module(moduleId)!.partSize!
+      : questions.length;
 
   /// 当前首轮总分组数
   int get totalParts =>
@@ -133,133 +125,64 @@ class RoundManager {
     }
   }
 
-  /// 生成全覆盖题表（首次学习）
-  /// 确保模块中的每个知识点至少出现一次
+  /// 生成全覆盖题表（首次学习）。
+  /// 普通模块每个知识点一题；六十四卦、十二长生、综合练习走各自的覆盖规则。
   List<Question> _generateFullCoverageRound() {
-    final List<Question> questions = [];
-
-    switch (moduleId) {
-      // ========== 天干相关模块 ==========
-      case 'tiangandizhi_wuxing':
-        // 天干五行：10个天干各出一题
-        final gans = tianGan.map((g) => g["name"]!).toList();
-        gans.shuffle(_rnd);
-        for (final gan in gans) {
-          questions.add(_createGanWuXingQuestion(gan));
-        }
-        // 地支五行：12个地支各出一题
-        final zhis = diZhi.map((z) => z["name"]!).toList();
-        zhis.shuffle(_rnd);
-        for (final zhi in zhis) {
-          questions.add(_createZhiWuXingQuestion(zhi));
-        }
-        break;
-
-      case 'tiangandizhi_yinyang':
-        // 天干阴阳：10个天干各出一题
-        final gans = tianGan.map((g) => g["name"]!).toList();
-        gans.shuffle(_rnd);
-        for (final gan in gans) {
-          questions.add(_createGanYinYangQuestion(gan));
-        }
-        // 地支阴阳：12个地支各出一题
-        final zhis = diZhi.map((z) => z["name"]!).toList();
-        zhis.shuffle(_rnd);
-        for (final zhi in zhis) {
-          questions.add(_createZhiYinYangQuestion(zhi));
-        }
-        break;
-
-      case 'tiangandizhi_direction':
-        // 方位：天干10题 + 地支12题
-        final gans = tianGan.map((g) => g["name"]!).toList();
-        gans.shuffle(_rnd);
-        for (final gan in gans) {
-          questions.add(_createGanDirectionQuestion(gan));
-        }
-        final zhis = diZhi.map((z) => z["name"]!).toList();
-        zhis.shuffle(_rnd);
-        for (final zhi in zhis) {
-          questions.add(_createZhiDirectionQuestion(zhi));
-        }
-        break;
-
-      case 'tiangandizhi_time':
-        // 时间：地支12题（时辰）
-        final zhis = diZhi.map((z) => z["name"]!).toList();
-        zhis.shuffle(_rnd);
-        for (final zhi in zhis) {
-          questions.add(_createZhiTimeQuestion(zhi));
-        }
-        break;
-
-      case 'hechong':
-        // 刑冲合害：六合按12个地支各一题，三合、三刑按组合各一题，自刑按地支各一题
-        for (final zhi in diZhi.map((z) => z["name"]!)) {
-          questions.add(Questions.generateLiuHeQuestion(zhi: zhi));
-        }
-        for (final group in sanHe) {
-          questions.add(Questions.generateSanHeQuestion(input: group.join()));
-        }
-        for (final group in sanXing) {
-          questions.add(Questions.generateSanXingQuestion(input: group.join()));
-        }
-        for (final zhi in ziXing.keys) {
-          questions.add(Questions.generateZiXingQuestion(input: zhi));
-        }
-        questions.shuffle(_rnd);
-        break;
-
-      case 'wuxing':
-        // 地支指诀：12个地支各出一题
-        final zhis = diZhi.map((z) => z["name"]!).toList();
-        zhis.shuffle(_rnd);
-        for (final zhi in zhis) {
-          questions.add(_createFingerJointQuestion(zhi));
-        }
-        break;
-
-      case 'shierchangsheng':
-        // 十二长生：12个日支各出两题，12个阶段也各出现两次
-        questions.addAll(_generateChangShengCoverage());
-        questions.shuffle(_rnd);
-        break;
-
-      case 'tiangandizhi_shengke':
-        // 五行生克：5个五行的相生、相克各出一题
-        for (final wuxing in wuXingSheng.keys) {
-          questions.add(Questions.generateWuXingShengQuestion(wuxing: wuxing));
-          questions.add(Questions.generateWuXingKeQuestion(wuxing: wuxing));
-        }
-        questions.shuffle(_rnd);
-        break;
-
-      case 'tiangandizhi_comprehensive':
-      case 'comprehensive':
-        // 综合练习：混合随机出题，同一轮内不重复知识点
-        questions.addAll(_generateMixedRound(comprehensiveRoundSize));
-        break;
-
-      case '64gua':
-        // 六十四卦：每个卦各出一题，共64题，题型交错分布
-        final guaNames = getAllGuaNames()..shuffle(_rnd);
-        for (int i = 0; i < guaNames.length; i++) {
-          final guaName = guaNames[i];
-          questions.add(
-            i.isEven
-                ? Questions.generateGuaToXiangQuestionFor(guaName)
-                : Questions.generateXiangToGuaQuestionFor(guaName),
-          );
-        }
-        break;
-
-      default:
-        // 其他模块：生成10题
-        questions.addAll(
-          List.generate(10, (_) => Questions.generateGanWuXingQuestion()),
-        );
+    final module = KnowledgeCatalog.module(moduleId);
+    if (module == null) {
+      return List.generate(
+        10,
+        (_) => KnowledgeCatalog.randomQuestionOfType('gan_wuxing', _rnd),
+      );
     }
 
+    switch (module.firstRound) {
+      case FirstRoundKind.eachItem:
+        final pool = KnowledgeCatalog.itemsForTypes(module.questionTypes)
+          ..shuffle(_rnd);
+        return [
+          for (final item in pool)
+            KnowledgeCatalog.generateQuestion(
+              item.questionType,
+              item.input,
+              random: _rnd,
+            ),
+        ];
+      case FirstRoundKind.guaAlternating:
+        return _generateGuaRound();
+      case FirstRoundKind.changshengCoverage:
+        final questions = _generateChangShengCoverage()..shuffle(_rnd);
+        return questions;
+      case FirstRoundKind.mixed:
+        return _generateMixedRound(comprehensiveRoundSize);
+    }
+  }
+
+  /// 六十四卦首轮：每个卦一题，卦名→卦象与卦象→卦名交错。
+  List<Question> _generateGuaRound() {
+    final guaNames = getAllGuaNames()..shuffle(_rnd);
+    final questions = <Question>[];
+    for (var i = 0; i < guaNames.length; i++) {
+      final guaName = guaNames[i];
+      if (i.isEven) {
+        questions.add(
+          KnowledgeCatalog.generateQuestion(
+            'gua_to_xiang',
+            guaName,
+            random: _rnd,
+          ),
+        );
+      } else {
+        final xiang = getGuaXiang(guaName)!;
+        questions.add(
+          KnowledgeCatalog.generateQuestion(
+            'xiang_to_gua',
+            xiang,
+            random: _rnd,
+          ),
+        );
+      }
+    }
     return questions;
   }
 
@@ -299,126 +222,15 @@ class RoundManager {
     }
     final type = itemKey.substring(0, separator);
     final input = itemKey.substring(separator + 1);
-
-    switch (type) {
-      case 'gan_wuxing':
-        return Questions.generateGanWuXingQuestion(gan: input);
-      case 'zhi_wuxing':
-        return Questions.generateZhiWuXingQuestion(zhi: input);
-      case 'gan_yinyang':
-        return Questions.generateGanYinYangQuestion(gan: input);
-      case 'zhi_yinyang':
-        return Questions.generateZhiYinYangQuestion(zhi: input);
-      case 'gan_direction':
-        return Questions.generateGanDirectionQuestion(gan: input);
-      case 'zhi_direction':
-        return Questions.generateZhiDirectionQuestion(zhi: input);
-      case 'gan_season':
-        return Questions.generateGanSeasonQuestion(gan: input);
-      case 'zhi_season':
-        return Questions.generateZhiSeasonQuestion(zhi: input);
-      case 'gan_month':
-        return Questions.generateGanMonthQuestion(gan: input);
-      case 'zhi_month':
-        return Questions.generateZhiMonthQuestion(zhi: input);
-      case 'gan_time':
-        return Questions.generateGanTimeQuestion(gan: input);
-      case 'zhi_time':
-        return Questions.generateZhiTimeQuestion(zhi: input);
-      case 'zhi_hour':
-        return Questions.generateZhiHourQuestion(zhi: input);
-      case 'zhi_liuhe':
-        return Questions.generateLiuHeQuestion(zhi: input);
-      case 'zhi_sanhe':
-        return Questions.generateSanHeQuestion(input: input);
-      case 'zhi_sanxing':
-        return Questions.generateSanXingQuestion(input: input);
-      case 'zhi_zixing':
-        return Questions.generateZiXingQuestion(input: input);
-      case 'finger_forward':
-        return Questions.generateFingerJointForwardQuestion(zhi: input);
-      case 'finger_reverse':
-        return Questions.generateFingerJointReverseQuestion(input: input);
-      case 'wuxing_sheng':
-        return Questions.generateWuXingShengQuestion(wuxing: input);
-      case 'wuxing_ke':
-        return Questions.generateWuXingKeQuestion(wuxing: input);
-      case 'changsheng':
-        return Questions.generateChangShengQuestion(input: input);
-      case 'gua_to_xiang':
-        return Questions.generateGuaToXiangQuestionFor(input);
-      case 'xiang_to_gua':
-        final guaName = getGuaName(input);
-        if (guaName == null) return _generateRandomQuestionForModule();
-        return Questions.generateXiangToGuaQuestionFor(guaName);
-      default:
-        return _generateRandomQuestionForModule();
+    if (KnowledgeCatalog.find(type, input) == null) {
+      return _generateRandomQuestionForModule();
     }
+    return KnowledgeCatalog.generateQuestion(type, input, random: _rnd);
   }
 
   /// 为当前模块生成随机题目
   Question _generateRandomQuestionForModule() {
-    return _generateRandomQuestionFor(moduleId);
-  }
-
-  /// 为指定模块生成随机题目
-  Question _generateRandomQuestionFor(String id) {
-    switch (id) {
-      case 'tiangandizhi_wuxing':
-        return _rnd.nextBool()
-            ? Questions.generateGanWuXingQuestion()
-            : Questions.generateZhiWuXingQuestion();
-      case 'tiangandizhi_yinyang':
-        return _rnd.nextBool()
-            ? Questions.generateGanYinYangQuestion()
-            : Questions.generateZhiYinYangQuestion();
-      case 'tiangandizhi_direction':
-        return _rnd.nextBool()
-            ? Questions.generateGanDirectionQuestion()
-            : Questions.generateZhiDirectionQuestion();
-      case 'tiangandizhi_time':
-        return Questions.generateZhiTimeQuestion();
-      case 'hechong':
-        final generators = [
-          Questions.generateLiuHeQuestion,
-          Questions.generateSanHeQuestion,
-          Questions.generateSanXingQuestion,
-          Questions.generateZiXingQuestion,
-        ];
-        return generators[_rnd.nextInt(generators.length)]();
-      case 'wuxing':
-        return Questions.generateFingerJointForwardQuestion();
-      case 'shierchangsheng':
-        return Questions.generateChangShengQuestion();
-      case '64gua':
-        return Questions.generate64GuaQuestion();
-      case 'tiangandizhi_shengke':
-        return _rnd.nextBool()
-            ? Questions.generateWuXingShengQuestion()
-            : Questions.generateWuXingKeQuestion();
-      case 'tiangandizhi_comprehensive':
-        final generators = <Question Function()>[
-          () => Questions.generateGanWuXingQuestion(),
-          () => Questions.generateZhiWuXingQuestion(),
-          () => Questions.generateGanYinYangQuestion(),
-          () => Questions.generateZhiYinYangQuestion(),
-          () => Questions.generateGanDirectionQuestion(),
-          () => Questions.generateZhiDirectionQuestion(),
-          () => Questions.generateZhiTimeQuestion(),
-          () => Questions.generateWuXingShengQuestion(),
-          () => Questions.generateWuXingKeQuestion(),
-        ];
-        return generators[_rnd.nextInt(generators.length)]();
-      case 'comprehensive':
-        // 各来源模块等概率抽取
-        final source =
-            comprehensiveSourceModules[_rnd.nextInt(
-              comprehensiveSourceModules.length,
-            )];
-        return _generateRandomQuestionFor(source);
-      default:
-        return Questions.generateGanWuXingQuestion();
-    }
+    return KnowledgeCatalog.randomQuestionForModule(moduleId, _rnd);
   }
 
   /// 生成混合随机题表，同一轮内按知识点去重
@@ -452,45 +264,15 @@ class RoundManager {
             diZhiCycle[(diZhiCycle.indexOf(startZhi) + stage) %
                 diZhiCycle.length];
         questions.add(
-          Questions.generateChangShengQuestion(input: '${riZhi}_$yaoZhi'),
+          KnowledgeCatalog.generateQuestion(
+            'changsheng',
+            '${riZhi}_$yaoZhi',
+            random: _rnd,
+          ),
         );
       }
     }
     return questions;
-  }
-
-  // ========== 针对特定知识点的题目生成器 ==========
-
-  Question _createGanWuXingQuestion(String gan) {
-    return Questions.generateGanWuXingQuestion(gan: gan);
-  }
-
-  Question _createZhiWuXingQuestion(String zhi) {
-    return Questions.generateZhiWuXingQuestion(zhi: zhi);
-  }
-
-  Question _createGanYinYangQuestion(String gan) {
-    return Questions.generateGanYinYangQuestion(gan: gan);
-  }
-
-  Question _createZhiYinYangQuestion(String zhi) {
-    return Questions.generateZhiYinYangQuestion(zhi: zhi);
-  }
-
-  Question _createGanDirectionQuestion(String gan) {
-    return Questions.generateGanDirectionQuestion(gan: gan);
-  }
-
-  Question _createZhiDirectionQuestion(String zhi) {
-    return Questions.generateZhiDirectionQuestion(zhi: zhi);
-  }
-
-  Question _createZhiTimeQuestion(String zhi) {
-    return Questions.generateZhiTimeQuestion(zhi: zhi);
-  }
-
-  Question _createFingerJointQuestion(String zhi) {
-    return Questions.generateFingerJointForwardQuestion(zhi: zhi);
   }
 
   /// 提交答案并更新进度

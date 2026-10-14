@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/flip_card.dart';
 import '../models/question.dart';
 import '../models/wrong_question_record.dart';
+import '../data/knowledge_catalog.dart';
 import '../services/round_manager.dart';
 import '../services/storage_service.dart';
 import '../services/question_reconstructor.dart';
@@ -75,37 +76,7 @@ class _StudyModuleScreenState extends State<StudyModuleScreen> {
   }
 
   String _getModuleTitle() {
-    switch (widget.moduleType) {
-      case 'tiangandizhi':
-        return "天干地支基础";
-      case 'wuxing':
-        return "十二支指诀";
-      case 'hechong':
-        return "六合三合六冲";
-      case 'comprehensive':
-        return "综合练习";
-      case 'shierchangsheng':
-        return "十二长生";
-      case 'directiontime':
-        return "方位时间";
-      // 新的天干地支子模块标题
-      case 'tiangandizhi_wuxing':
-        return "天干地支五行";
-      case 'tiangandizhi_yinyang':
-        return "天干地支阴阳";
-      case 'tiangandizhi_direction':
-        return "方位对应";
-      case 'tiangandizhi_time':
-        return "时间对应";
-      case 'tiangandizhi_shengke':
-        return "五行生克";
-      case 'tiangandizhi_comprehensive':
-        return "天干地支综合练习";
-      case '64gua':
-        return "六十四卦";
-      default:
-        return "学习";
-    }
+    return KnowledgeCatalog.module(widget.moduleType)?.name ?? '学习';
   }
 
   /// 获取学习模式提示文字

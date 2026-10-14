@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/wrong_question_record.dart';
 import '../models/question.dart';
+import '../data/knowledge_catalog.dart';
 import '../services/storage_service.dart';
 import '../services/question_reconstructor.dart';
 import '../services/sync/sync_engine.dart';
@@ -429,35 +430,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   /// 获取题型显示名称
   String _getQuestionTypeDisplay(String questionType) {
-    final typeMap = {
-      'gan_wuxing': '天干五行',
-      'zhi_wuxing': '地支五行',
-      'gan_yinyang': '天干阴阳',
-      'zhi_yinyang': '地支阴阳',
-      'gan_direction': '天干方位',
-      'zhi_direction': '地支方位',
-      'gan_season': '天干季节',
-      'zhi_season': '地支季节',
-      'gan_month': '天干月份',
-      'zhi_month': '地支月份',
-      'gan_time': '天干时间',
-      'zhi_time': '地支时间',
-      'zhi_hour': '地支时辰',
-      'zhi_liuhe': '六合',
-      'zhi_sanhe': '三合',
-      'zhi_sanxing': '三刑',
-      'zhi_zixing': '自刑',
-      'zhi_liuchong': '六冲',
-      'zhi_liuhai': '六害',
-      'zhi_poxiang': '相破',
-      'finger_forward': '地支指诀',
-      'finger_reverse': '指诀反查',
-      'wuxing_sheng': '五行相生',
-      'wuxing_ke': '五行相克',
-      'changsheng': '十二长生',
-      'gua_to_xiang': '六十四卦',
-      'xiang_to_gua': '六十四卦',
-    };
-    return typeMap[questionType] ?? questionType;
+    return KnowledgeCatalog.questionTypeLabel(questionType);
   }
 }

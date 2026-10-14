@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/knowledge_catalog.dart';
 import 'study_module_screen.dart';
 
 class TianGanDiZhiSubmenuScreen extends StatelessWidget {
@@ -31,60 +32,17 @@ class TianGanDiZhiSubmenuScreen extends StatelessWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      _buildSubmenuButton(
-                        context,
-                        title: "综合练习",
-                        subtitle: "综合练习天干地支五行、阴阳、方位、时间、生克关系",
-                        icon: Icons.quiz,
-                        onTap: () =>
-                            _navigateToModule(context, 'tiangandizhi_comprehensive'),
-                      ),
-                      _buildSubmenuButton(
-                        context,
-                        title: "天干地支五行",
-                        subtitle: "学习天干地支的五行属性",
-                        icon: Icons.eco,
-                        onTap: () =>
-                            _navigateToModule(context, 'tiangandizhi_wuxing'),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildSubmenuButton(
-                        context,
-                        title: "天干地支阴阳",
-                        subtitle: "掌握天干地支的阴阳属性",
-                        icon: Icons.brightness_6,
-                        onTap: () =>
-                            _navigateToModule(context, 'tiangandizhi_yinyang'),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildSubmenuButton(
-                        context,
-                        title: "方位对应",
-                        subtitle: "了解天干地支对应的方位",
-                        icon: Icons.explore,
-                        onTap: () => _navigateToModule(
+                      for (
+                        var i = 0;
+                        i < KnowledgeCatalog.tianganMenuIds.length;
+                        i++
+                      ) ...[
+                        if (i >= 2) const SizedBox(height: 12),
+                        _buildCatalogButton(
                           context,
-                          'tiangandizhi_direction',
+                          KnowledgeCatalog.tianganMenuIds[i],
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildSubmenuButton(
-                        context,
-                        title: "时间对应",
-                        subtitle: "掌握天干地支对应的时间",
-                        icon: Icons.schedule,
-                        onTap: () =>
-                            _navigateToModule(context, 'tiangandizhi_time'),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildSubmenuButton(
-                        context,
-                        title: "五行生克",
-                        subtitle: "学习五行之间的生克关系",
-                        icon: Icons.psychology,
-                        onTap: () =>
-                            _navigateToModule(context, 'tiangandizhi_shengke'),
-                      ),
+                      ],
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -174,6 +132,36 @@ class TianGanDiZhiSubmenuScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildCatalogButton(BuildContext context, String id) {
+    final module = KnowledgeCatalog.module(id)!;
+    return _buildSubmenuButton(
+      context,
+      title: module.name,
+      subtitle: module.subtitle,
+      icon: _submenuIcon(id),
+      onTap: () => _navigateToModule(context, id),
+    );
+  }
+
+  IconData _submenuIcon(String id) {
+    switch (id) {
+      case 'tiangandizhi_comprehensive':
+        return Icons.quiz;
+      case 'tiangandizhi_wuxing':
+        return Icons.eco;
+      case 'tiangandizhi_yinyang':
+        return Icons.brightness_6;
+      case 'tiangandizhi_direction':
+        return Icons.explore;
+      case 'tiangandizhi_time':
+        return Icons.schedule;
+      case 'tiangandizhi_shengke':
+        return Icons.psychology;
+      default:
+        return Icons.quiz;
+    }
   }
 
   void _navigateToModule(BuildContext context, String moduleType) {

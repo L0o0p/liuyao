@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import '../data/knowledge_catalog.dart';
 import '../models/module_progress.dart';
 import '../services/storage_service.dart';
 import '../services/sync/sync_engine.dart';
@@ -19,76 +20,8 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-  /// 所有模块的配置信息
-  /// 包含模块ID、显示名称、图标等
-  final List<ModuleConfig> _modules = [
-    ModuleConfig(
-      id: 'tiangandizhi_wuxing',
-      name: '天干地支五行',
-      icon: Icons.eco,
-      color: Colors.green,
-    ),
-    ModuleConfig(
-      id: 'tiangandizhi_yinyang',
-      name: '天干地支阴阳',
-      icon: Icons.brightness_6,
-      color: Colors.orange,
-    ),
-    ModuleConfig(
-      id: 'tiangandizhi_direction',
-      name: '方位对应',
-      icon: Icons.explore,
-      color: Colors.blue,
-    ),
-    ModuleConfig(
-      id: 'tiangandizhi_time',
-      name: '时间对应',
-      icon: Icons.schedule,
-      color: Colors.purple,
-    ),
-    ModuleConfig(
-      id: 'tiangandizhi_shengke',
-      name: '五行生克',
-      icon: Icons.sync_alt,
-      color: Colors.lightGreen,
-    ),
-    ModuleConfig(
-      id: 'tiangandizhi_comprehensive',
-      name: '天干地支综合练习',
-      icon: Icons.quiz,
-      color: Colors.cyan,
-    ),
-    ModuleConfig(
-      id: 'wuxing',
-      name: '十二支指诀',
-      icon: Icons.psychology,
-      color: Colors.teal,
-    ),
-    ModuleConfig(
-      id: 'hechong',
-      name: '六合三合六冲',
-      icon: Icons.compare_arrows,
-      color: Colors.indigo,
-    ),
-    ModuleConfig(
-      id: 'shierchangsheng',
-      name: '十二长生',
-      icon: Icons.timeline,
-      color: Colors.deepOrange,
-    ),
-    ModuleConfig(
-      id: '64gua',
-      name: '六十四卦',
-      icon: Icons.grain,
-      color: Colors.brown,
-    ),
-    ModuleConfig(
-      id: 'comprehensive',
-      name: '综合练习',
-      icon: Icons.quiz,
-      color: Colors.blueGrey,
-    ),
-  ];
+  /// 模块列表、名称和图标都来自知识点目录。
+  List<StudyModule> get _modules => KnowledgeCatalog.modules;
 
   /// 存储所有模块的进度数据
   Map<String, ModuleProgress> _progressMap = {};
@@ -541,10 +474,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   /// 构建单个模块进度卡片
-  Widget _buildModuleProgressCard(
-    ModuleConfig module,
-    ModuleProgress progress,
-  ) {
+  Widget _buildModuleProgressCard(StudyModule module, ModuleProgress progress) {
     final totalQuestions =
         progress.totalCorrectCount + progress.totalWrongCount;
     final accuracy = totalQuestions > 0
@@ -714,20 +644,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
 /// 模块配置类
 /// 定义模块的基本信息（ID、名称、图标、颜色）
-class ModuleConfig {
-  final String id;
-  final String name;
-  final IconData icon;
-  final Color color;
-
-  ModuleConfig({
-    required this.id,
-    required this.name,
-    required this.icon,
-    required this.color,
-  });
-}
-
 /// 总体统计数据类
 class _OverallStats {
   final int totalCorrect;

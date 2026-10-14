@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liuyao/data/di_zhi.dart';
+import 'package:liuyao/data/gua_data.dart';
+import 'package:liuyao/data/knowledge_catalog.dart';
 import 'package:liuyao/data/zhi_relations.dart';
 import 'package:liuyao/models/wrong_question_record.dart';
 import 'package:liuyao/services/round_manager.dart';
@@ -44,19 +46,13 @@ void main() {
       )).questions;
       expect(questions, hasLength(RoundManager.comprehensiveRoundSize));
 
-      const allowed = {
-        'gan_wuxing',
-        'zhi_wuxing',
-        'gan_yinyang',
-        'zhi_yinyang',
-        'gan_direction',
-        'zhi_direction',
-        'zhi_time',
-        'wuxing_sheng',
-        'wuxing_ke',
-      };
+      final allowed = KnowledgeCatalog.module(
+        'tiangandizhi_comprehensive',
+      )!.questionTypes.toSet();
       final types = questions.map((q) => q.questionType).toSet();
       expect(allowed.containsAll(types), isTrue);
+      expect(allowed, contains('gan_season'));
+      expect(allowed, contains('zhi_hour'));
       expect(types.length, greaterThan(1));
       expect(questions.map((q) => q.itemKey).toSet(), hasLength(20));
     });
@@ -85,6 +81,57 @@ void main() {
   });
 
   group('首轮按知识点覆盖', () {
+    test('全覆盖模块的首轮正好是注册表里的每个知识点', () async {
+      const ids = [
+        'tiangandizhi_wuxing',
+        'tiangandizhi_yinyang',
+        'tiangandizhi_direction',
+        'tiangandizhi_time',
+        'tiangandizhi_shengke',
+        'wuxing',
+        'hechong',
+      ];
+      for (final id in ids) {
+        final module = KnowledgeCatalog.module(id)!;
+        final expected = KnowledgeCatalog.itemsForTypes(module.questionTypes);
+        final questions = (await _firstRound(id)).questions;
+        expect(
+          questions.map((q) => q.itemKey).toSet(),
+          expected.map((item) => item.itemKey).toSet(),
+          reason: id,
+        );
+        expect(questions, hasLength(expected.length), reason: id);
+        expect(
+          questions.every((q) => q.questionType == 'gan_wuxing'),
+          isFalse,
+          reason: id,
+        );
+      }
+    });
+
+    test('六十四卦首轮每卦一题，两种方向交错', () async {
+      final manager = await _firstRound('64gua');
+      final questions = manager.questions;
+      expect(questions, hasLength(64));
+      expect(manager.partSize, 16);
+      expect(manager.totalParts, 4);
+
+      final names = <String>{};
+      for (var i = 0; i < questions.length; i++) {
+        final question = questions[i];
+        if (i.isEven) {
+          expect(question.questionType, 'gua_to_xiang');
+          names.add(question.input);
+        } else {
+          expect(question.questionType, 'xiang_to_gua');
+          final guaName = getGuaName(question.input);
+          expect(guaName, isNotNull);
+          names.add(guaName!);
+        }
+      }
+      expect(names, getAllGuaNames().toSet());
+    });
+
     test('刑冲合害：六合 12 支、三合 4 局、三刑 3 组、自刑 4 支', () async {
       final questions = (await _firstRound('hechong')).questions;
 

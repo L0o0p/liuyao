@@ -20,12 +20,7 @@ const List<List<String>> sanXing = [
   ["子", "卯"], // 子卯相刑（无礼之刑）
 ];
 
-const Map<String, String> ziXing = {
-  "辰": "辰",
-  "午": "午",
-  "酉": "酉",
-  "亥": "亥",
-};
+const Map<String, String> ziXing = {"辰": "辰", "午": "午", "酉": "酉", "亥": "亥"};
 
 // 十二长生
 const List<String> changShengCycle = [
@@ -83,3 +78,42 @@ const List<String> diZhiCycle = [
   "戌",
   "亥",
 ];
+
+/// 六冲：地支循环上相隔六位。
+String liuChongOf(String zhi) {
+  final index = diZhiCycle.indexOf(zhi);
+  if (index < 0) return "未知";
+  return diZhiCycle[(index + 6) % diZhiCycle.length];
+}
+
+/// 六害。
+const Map<String, String> liuHai = {
+  "子": "未",
+  "丑": "午",
+  "寅": "巳",
+  "卯": "辰",
+  "辰": "卯",
+  "巳": "寅",
+  "午": "丑",
+  "未": "子",
+  "申": "亥",
+  "酉": "戌",
+  "戌": "酉",
+  "亥": "申",
+};
+
+/// 相破。
+const Map<String, String> poXiang = {
+  "子": "酉",
+  "丑": "辰",
+  "寅": "亥",
+  "卯": "午",
+  "辰": "丑",
+  "巳": "申",
+  "午": "卯",
+  "未": "戌",
+  "申": "巳",
+  "酉": "子",
+  "戌": "未",
+  "亥": "寅",
+};
