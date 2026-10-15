@@ -1,12 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:liuyao/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('应用可以打开学习页', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    expect(find.text('六爻基础'), findsOneWidget);
+  testWidgets('应用默认打开今日学习', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const MyApp());
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('今日学习'), findsOneWidget);
+    expect(find.text('今日'), findsOneWidget);
     expect(find.text('学习'), findsOneWidget);
+    expect(find.text('进度'), findsOneWidget);
+    expect(find.text('复习'), findsNothing);
   });
 }

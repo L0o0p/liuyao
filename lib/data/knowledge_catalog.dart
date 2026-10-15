@@ -158,6 +158,32 @@ class KnowledgeCatalog {
     return items.where((item) => wanted.contains(item.questionType)).toList();
   }
 
+  /// 模块里的知识点，保持目录顺序。综合练习展开来源模块并去重。
+  static List<KnowledgeItem> itemsForModule(String moduleId) {
+    return _itemsForModule(moduleId, <String>{});
+  }
+
+  static List<KnowledgeItem> _itemsForModule(
+    String moduleId,
+    Set<String> visiting,
+  ) {
+    final found = module(moduleId);
+    if (found == null || !visiting.add(moduleId)) return const [];
+    if (found.sourceModuleIds.isNotEmpty) {
+      final seen = <String>{};
+      final result = <KnowledgeItem>[];
+      for (final sourceId in found.sourceModuleIds) {
+        for (final item in _itemsForModule(sourceId, visiting)) {
+          if (seen.add(item.itemKey)) result.add(item);
+        }
+      }
+      visiting.remove(moduleId);
+      return result;
+    }
+    visiting.remove(moduleId);
+    return itemsForTypes(found.questionTypes);
+  }
+
   static String randomInput(String questionType, Random random) {
     final pool = itemsForTypes([questionType]);
     if (pool.isEmpty) {

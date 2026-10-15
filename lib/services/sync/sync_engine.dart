@@ -20,13 +20,13 @@ class SyncEngine {
 
   static final SyncEngine instance = SyncEngine();
 
-  /// 数据版本号。合并真正改写本地数据后自增，进度页和错题本监听它来刷新。
+  /// 数据版本号。合并真正改写本地数据后自增，进度页监听它来刷新。
   static final ValueNotifier<int> dataVersion = ValueNotifier<int>(0);
 
   final SyncBackend _backend;
   Future<void>? _inFlight;
 
-  /// 启动、回到前台、答完一轮时调用。已在进行的同步不会重入。
+  /// 启动、回到前台、结束一次练习时调用。已在进行的同步不会重入。
   Future<void> sync() {
     final current = _inFlight;
     if (current != null) return current;
@@ -70,7 +70,7 @@ class SyncEngine {
   /// 把进度和错题打成一份可分享的 JSON。
   Future<Map<String, dynamic>> exportDocument() async {
     final items = <String, Map<String, dynamic>>{};
-    for (final prefix in [LocalStore.progressPrefix, LocalStore.wrongPrefix]) {
+    for (final prefix in [LocalStore.srsPrefix]) {
       final keys = await LocalStore.instance.keysWithPrefix(prefix);
       for (final key in keys) {
         final value = await LocalStore.instance.get(key);
@@ -105,8 +105,7 @@ class SyncEngine {
     final incoming = <String, Map<String, dynamic>>{};
     for (final entry in itemsRaw.entries) {
       final key = entry.key.toString();
-      if (!key.startsWith(LocalStore.progressPrefix) &&
-          !key.startsWith(LocalStore.wrongPrefix)) {
+      if (!key.startsWith(LocalStore.srsPrefix)) {
         continue;
       }
       if (entry.value is! Map) {

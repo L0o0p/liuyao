@@ -1,0 +1,192 @@
+import '../models/srs_card.dart';
+
+/// 今日队列拆成到期部分和新学部分。
+class TodayPlan {
+  final List<String> dueKeys;
+  final List<String> newKeys;
+
+  const TodayPlan({required this.dueKeys, required this.newKeys});
+
+  List<String> get itemKeys => [...dueKeys, ...newKeys];
+
+  int get dueCount => dueKeys.length;
+
+  int get newCount => newKeys.length;
+
+  bool get isEmpty => itemKeys.isEmpty;
+}
+
+/// 一个模块里已掌握、学习中、未学的条数。
+class SrsCounts {
+  final int mastered;
+  final int learning;
+  final int unseen;
+
+  const SrsCounts({
+    required this.mastered,
+    required this.learning,
+    required this.unseen,
+  });
+
+  int get total => mastered + learning + unseen;
+}
+
+/// 纯函数调度。不读存储，方便单测。
+class SrsScheduler {
+  /// 新卡第一次出现：learning，立刻到期。
+  static SrsCard introduce(String itemKey, DateTime now) {
+    return SrsCard(
+      itemKey: itemKey,
+      state: SrsState.learning,
+      dueAt: now,
+      intervalDays: 0,
+      ease: SrsLimits.initialEase,
+    );
+  }
+
+  /// 二元评分。
+  /// 答错：回到 learning，10 分钟后再到期。
+  /// 答对且不超过 8 秒：learning 毕业为 1 天；review 间隔乘 ease，封顶 180 天。
+  /// 答对但更慢：仍毕业到 review，这次间隔增长打五折。
+  static SrsCard grade({
+    required SrsCard card,
+    required bool correct,
+    required Duration elapsed,
+    required DateTime now,
+  }) {
+    final reviewed = card.copyWith(reps: card.reps + 1, lastReviewedAt: now);
+    if (!correct) {
+      return reviewed.copyWith(
+        state: SrsState.learning,
+        intervalDays: 0,
+        dueAt: now.add(SrsLimits.lapseDelay),
+        lapses: card.lapses + 1,
+      );
+    }
+
+    final days = _nextIntervalDays(
+      state: card.state,
+      intervalDays: card.intervalDays,
+      ease: card.ease,
+      fast: elapsed <= SrsLimits.fastThreshold,
+    );
+    return reviewed.copyWith(
+      state: SrsState.review,
+      intervalDays: days,
+      dueAt: addDays(now, days),
+    );
+  }
+
+  /// 60 分映射到 1 天，100 分映射到 7 天。
+  static double intervalDaysForScore(int score) {
+    final clamped = score.clamp(60, 100).toInt();
+    return 1 + (clamped - 60) * 6 / 40;
+  }
+
+  static DateTime addDays(DateTime now, double days) {
+    final micros = (days * Duration.microsecondsPerDay).round();
+    return now.add(Duration(microseconds: micros));
+  }
+
+  static bool isDue(SrsCard card, DateTime now) => !card.dueAt.isAfter(now);
+
+  static bool isMastered(SrsCard card) => card.isMastered;
+
+  /// 先放到期卡，再按目录顺序补新卡。新卡数量受当日剩余额度限制。
+  static TodayPlan planToday({
+    required List<String> catalogOrder,
+    required Map<String, SrsCard> cards,
+    required int introducedToday,
+    required DateTime now,
+    int dailyLimit = SrsLimits.dailyNewLimit,
+  }) {
+    final order = <String, int>{
+      for (var i = 0; i < catalogOrder.length; i++) catalogOrder[i]: i,
+    };
+    final due = <String>[];
+    final unseen = <String>[];
+    for (final key in catalogOrder) {
+      final card = cards[key];
+      if (card == null) {
+        unseen.add(key);
+        continue;
+      }
+      if (isDue(card, now)) due.add(key);
+    }
+    due.sort((a, b) {
+      final byTime = cards[a]!.dueAt.compareTo(cards[b]!.dueAt);
+      if (byTime != 0) return byTime;
+      return order[a]!.compareTo(order[b]!);
+    });
+    final remaining = (dailyLimit - introducedToday).clamp(0, dailyLimit).toInt();
+    return TodayPlan(dueKeys: due, newKeys: unseen.take(remaining).toList());
+  }
+
+  /// 到期或学习中的在前，其余已有卡片按离到期从近到远，没学过的按目录顺序垫后。
+  /// 不看每日新学上限。
+  static List<String> moduleQueue({
+    required List<String> moduleItemKeys,
+    required Map<String, SrsCard> cards,
+    required DateTime now,
+  }) {
+    final order = <String, int>{
+      for (var i = 0; i < moduleItemKeys.length; i++) moduleItemKeys[i]: i,
+    };
+    final front = <String>[];
+    final later = <String>[];
+    final unseen = <String>[];
+    for (final key in moduleItemKeys) {
+      final card = cards[key];
+      if (card == null) {
+        unseen.add(key);
+        continue;
+      }
+      if (card.state == SrsState.learning || isDue(card, now)) {
+        front.add(key);
+      } else {
+        later.add(key);
+      }
+    }
+    int compare(String a, String b) {
+      final byTime = cards[a]!.dueAt.compareTo(cards[b]!.dueAt);
+      if (byTime != 0) return byTime;
+      return order[a]!.compareTo(order[b]!);
+    }
+
+    front.sort(compare);
+    later.sort(compare);
+    return [...front, ...later, ...unseen];
+  }
+
+  static SrsCounts count(Iterable<String> itemKeys, Map<String, SrsCard> cards) {
+    var mastered = 0;
+    var learning = 0;
+    var unseen = 0;
+    for (final key in itemKeys) {
+      final card = cards[key];
+      if (card == null) {
+        unseen++;
+      } else if (isMastered(card)) {
+        mastered++;
+      } else {
+        learning++;
+      }
+    }
+    return SrsCounts(mastered: mastered, learning: learning, unseen: unseen);
+  }
+
+  static double _nextIntervalDays({
+    required SrsState state,
+    required double intervalDays,
+    required double ease,
+    required bool fast,
+  }) {
+    final target = state == SrsState.learning
+        ? 1.0
+        : _min(SrsLimits.maxIntervalDays, intervalDays * ease);
+    if (fast) return target;
+    return intervalDays + (target - intervalDays) / 2;
+  }
+
+  static double _min(double a, double b) => a < b ? a : b;
+}

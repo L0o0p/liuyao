@@ -39,6 +39,19 @@ class _FailingBackend implements SyncBackend {
   }
 }
 
+Map<String, dynamic> _card(String itemKey, int reps, int updatedAt) {
+  return {
+    'itemKey': itemKey,
+    'state': 'learning',
+    'dueAt': 0,
+    'intervalDays': 0,
+    'ease': 2.5,
+    'lapses': 0,
+    'reps': reps,
+    'updatedAt': updatedAt,
+  };
+}
+
 Map<String, dynamic> _progress(String moduleId, int correct, int updatedAt) {
   return {
     'moduleId': moduleId,
@@ -107,64 +120,35 @@ void main() {
 
   test('导入不会覆盖本地较新的数据，但会写入较新的外来数据', () async {
     await LocalStore.instance.writeRaw(
-      'progress:tiangandizhi_wuxing',
-      _progress('tiangandizhi_wuxing', 5, 200),
+      'srs:gan_wuxing:甲',
+      _card('gan_wuxing:甲', 5, 200),
       pending: false,
     );
 
     final older = await SyncEngine.instance.importJson(
       jsonEncode({
-        'schema_version': 2,
+        'schema_version': 3,
         'exportedAt': 1,
-        'items': {
-          'progress:tiangandizhi_wuxing': _progress(
-            'tiangandizhi_wuxing',
-            1,
-            100,
-          ),
-        },
+        'items': {'srs:gan_wuxing:甲': _card('gan_wuxing:甲', 1, 100)},
       }),
     );
     expect(older.applied, 0);
     expect(older.keptLocal, 1);
-    expect(
-      (await StorageService.loadProgress(
-        'tiangandizhi_wuxing',
-      )).totalCorrectCount,
-      5,
-    );
+    expect((await StorageService.loadCard('gan_wuxing:甲'))!.reps, 5);
 
     final newer = await SyncEngine.instance.importJson(
       jsonEncode({
-        'schema_version': 2,
+        'schema_version': 3,
         'exportedAt': 2,
         'items': {
-          'progress:tiangandizhi_wuxing': _progress(
-            'tiangandizhi_wuxing',
-            9,
-            300,
-          ),
-          'wrong:gan_wuxing:乙': {
-            'questionType': 'gan_wuxing',
-            'input': '乙',
-            'correctAnswer': '木',
-            'userAnswer': '火',
-            'wrongCount': 1,
-            'lastWrongTime': '2024-02-01T00:00:00.000',
-            'updatedAt': 300,
-          },
+          'srs:gan_wuxing:甲': _card('gan_wuxing:甲', 9, 300),
+          'srs:gan_wuxing:乙': _card('gan_wuxing:乙', 1, 300),
         },
       }),
     );
     expect(newer.applied, 2);
-    expect(
-      (await StorageService.loadProgress(
-        'tiangandizhi_wuxing',
-      )).totalCorrectCount,
-      9,
-    );
-    final wrongs = await StorageService.loadWrongQuestions();
-    expect(wrongs.single.input, '乙');
+    expect((await StorageService.loadCard('gan_wuxing:甲'))!.reps, 9);
+    expect((await StorageService.loadCard('gan_wuxing:乙'))!.reps, 1);
   });
 
   test('不支持的 schema_version 会被拒绝', () async {
@@ -177,33 +161,33 @@ void main() {
 
   test('云端较新的记录会写入本地，失败时不抛出', () async {
     await LocalStore.instance.writeRaw(
-      'progress:demo',
-      _progress('demo', 1, 100),
+      'srs:demo',
+      _card('demo', 1, 100),
       pending: true,
     );
     final backend = _MemoryBackend()
-      ..remote['progress:demo'] = _progress('demo', 9, 200)
-      ..remote['progress:extra'] = _progress('extra', 3, 50);
+      ..remote['srs:demo'] = _card('demo', 9, 200)
+      ..remote['srs:extra'] = _card('extra', 3, 50);
     final engine = SyncEngine(backend: backend);
 
     await engine.sync();
 
-    expect((await StorageService.loadProgress('demo')).totalCorrectCount, 9);
-    expect((await StorageService.loadProgress('extra')).totalCorrectCount, 3);
+    expect((await StorageService.loadCard('demo'))!.reps, 9);
+    expect((await StorageService.loadCard('extra'))!.reps, 3);
 
     await SyncEngine(backend: _FailingBackend()).sync();
-    expect((await StorageService.loadProgress('demo')).totalCorrectCount, 9);
+    expect((await StorageService.loadCard('demo'))!.reps, 9);
   });
 
   test('空同步实现不会改动本地数据', () async {
     await LocalStore.instance.writeRaw(
-      'progress:demo',
-      _progress('demo', 4, 80),
+      'srs:demo',
+      _card('demo', 4, 80),
       pending: true,
     );
     final version = SyncEngine.dataVersion.value;
     await SyncEngine.instance.sync();
-    expect((await StorageService.loadProgress('demo')).totalCorrectCount, 4);
+    expect((await StorageService.loadCard('demo'))!.reps, 4);
     expect(SyncEngine.dataVersion.value, version);
   });
 }

@@ -4,8 +4,8 @@ import '../models/question.dart';
 
 class FlipCard extends StatefulWidget {
   final Question question;
-  final VoidCallback? onCorrectAnswer;
-  final void Function(String userAnswer)? onWrongAnswer;
+  final void Function(Duration elapsed)? onCorrectAnswer;
+  final void Function(String userAnswer, Duration elapsed)? onWrongAnswer;
 
   /// 答错后点击「下一题」，由外部页面负责翻页
   final VoidCallback? onNext;
@@ -27,6 +27,13 @@ class _FlipCardState extends State<FlipCard> {
   bool hasAnswered = false;
   bool isCorrect = false;
   bool hasRequestedNext = false;
+  late final DateTime _shownAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _shownAt = DateTime.now();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +122,9 @@ class _FlipCardState extends State<FlipCard> {
                     onPressed: hasAnswered
                         ? null
                         : () {
+                            final elapsed = DateTime.now().difference(
+                              _shownAt,
+                            );
                             setState(() {
                               selectedOption = option;
                               hasAnswered = true;
@@ -128,18 +138,18 @@ class _FlipCardState extends State<FlipCard> {
                               HapticFeedback.mediumImpact();
                             }
 
-                            // 如果答案正确，延迟一下显示反馈，然后自动翻页
+                            // 答对短暂停顿，让对错反馈留在屏幕上，再进入下一题。
                             if (isCorrect && widget.onCorrectAnswer != null) {
                               Future.delayed(
                                 const Duration(milliseconds: 300),
                                 () {
-                                  widget.onCorrectAnswer!();
+                                  if (!mounted) return;
+                                  widget.onCorrectAnswer!(elapsed);
                                 },
                               );
                             } else if (!isCorrect &&
                                 widget.onWrongAnswer != null) {
-                              // 答错了，通知外部记录错题
-                              widget.onWrongAnswer!(option);
+                              widget.onWrongAnswer!(option, elapsed);
                             }
                           },
                     style: ElevatedButton.styleFrom(
