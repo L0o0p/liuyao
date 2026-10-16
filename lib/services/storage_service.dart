@@ -52,10 +52,16 @@ class StorageService {
   }
 
   static Future<void> clearModule(String moduleId) async {
-    for (final item in KnowledgeCatalog.itemsForModule(moduleId)) {
-      final existing = await LocalStore.instance.get(cardKey(item.itemKey));
+    await clearItems(
+      KnowledgeCatalog.itemsForModule(moduleId).map((item) => item.itemKey),
+    );
+  }
+
+  static Future<void> clearItems(Iterable<String> itemKeys) async {
+    for (final itemKey in itemKeys) {
+      final existing = await LocalStore.instance.get(cardKey(itemKey));
       if (existing == null || LocalStore.isDeleted(existing)) continue;
-      await deleteCard(item.itemKey);
+      await deleteCard(itemKey);
     }
   }
 

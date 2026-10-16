@@ -10,18 +10,18 @@ import '../models/srs_card.dart';
 import '../services/srs_scheduler.dart';
 import '../services/storage_service.dart';
 import '../services/sync/sync_engine.dart';
-import 'study_module_screen.dart';
+import '../widgets/mastery_counts.dart';
 
-/// 按模块显示已掌握、学习中、未学。
+/// 连续学习天数、整体掌握度、学习数据导入导出和清空卡片。
 /// 已掌握：state 为 review，且间隔不少于 21 天。
-class ProgressScreen extends StatefulWidget {
-  const ProgressScreen({super.key});
+class MineScreen extends StatefulWidget {
+  const MineScreen({super.key});
 
   @override
-  State<ProgressScreen> createState() => _ProgressScreenState();
+  State<MineScreen> createState() => _MineScreenState();
 }
 
-class _ProgressScreenState extends State<ProgressScreen> {
+class _MineScreenState extends State<MineScreen> {
   Map<String, SrsCard> _cards = {};
   bool _loading = true;
   bool _transferring = false;
@@ -142,34 +142,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     }
   }
 
-  Future<void> _clearModule(String moduleId, String moduleName) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('清空卡片'),
-        content: Text('确定要清掉「$moduleName」的复习卡片吗？这些知识点会变成未学。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('清空'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await StorageService.clearModule(moduleId);
-    await _load();
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('已清掉「$moduleName」的卡片')));
-  }
-
   Future<void> _clearAll() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -200,14 +172,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final modules = KnowledgeCatalog.modules;
     final overall = SrsScheduler.count(
       KnowledgeCatalog.items.map((item) => item.itemKey),
       _cards,
     );
+    final streak = SrsScheduler.studyStreakDays(_cards.values, DateTime.now());
     return Scaffold(
       appBar: AppBar(
-        title: const Text('学习进度'),
+        title: const Text('我的'),
         centerTitle: true,
         actions: [
           IconButton(
@@ -223,41 +195,23 @@ class _ProgressScreenState extends State<ProgressScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  _StreakCard(days: streak),
+                  const SizedBox(height: 12),
                   _OverallCard(counts: overall),
                   const SizedBox(height: 8),
                   Text(
-                    '已掌握是进入复习且间隔不少于 21 天的知识点。',
+                    '已掌握是进入复习且间隔不少于 21 天的知识点。各章的掌握情况在「章节」里看。',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 16),
-                  for (final module in modules) ...[
-                    _ModuleCard(
-                      module: module,
-                      counts: SrsScheduler.count(
-                        KnowledgeCatalog.itemsForModule(
-                          module.id,
-                        ).map((item) => item.itemKey),
-                        _cards,
-                      ),
-                      onOpen: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                StudyModuleScreen(moduleType: module.id),
-                          ),
-                        ).then((_) => _load());
-                      },
-                      onClear: () => _clearModule(module.id, module.name),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
                   _TransferCard(
                     busy: _transferring,
                     onExport: _exportLearningData,
                     onImport: _importLearningData,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
+                  Text('设置', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: _clearAll,
                     style: OutlinedButton.styleFrom(
@@ -326,22 +280,37 @@ class _TransferCard extends StatelessWidget {
   }
 }
 
-class _OverallCard extends StatelessWidget {
-  final SrsCounts counts;
+class _StreakCard extends StatelessWidget {
+  final int days;
 
-  const _OverallCard({required this.counts});
+  const _StreakCard({required this.days});
 
   @override
   Widget build(BuildContext context) {
-    final ratio = counts.total == 0 ? 0.0 : counts.mastered / counts.total;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
+        child: Row(
           children: [
-            _CountRow(counts: counts),
-            const SizedBox(height: 16),
-            LinearProgressIndicator(value: ratio, minHeight: 8),
+            Icon(
+              Icons.local_fire_department,
+              size: 36,
+              color: days > 0 ? Colors.deepOrange : Colors.grey,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('连续学习', style: Theme.of(context).textTheme.bodyMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$days 天',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -349,113 +318,27 @@ class _OverallCard extends StatelessWidget {
   }
 }
 
-class _ModuleCard extends StatelessWidget {
-  final StudyModule module;
+class _OverallCard extends StatelessWidget {
   final SrsCounts counts;
-  final VoidCallback onOpen;
-  final VoidCallback onClear;
 
-  const _ModuleCard({
-    required this.module,
-    required this.counts,
-    required this.onOpen,
-    required this.onClear,
-  });
+  const _OverallCard({required this.counts});
 
   @override
   Widget build(BuildContext context) {
-    final ratio = counts.total == 0 ? 0.0 : counts.mastered / counts.total;
     return Card(
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(module.icon, color: module.color),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      module.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'clear') onClear();
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'clear', child: Text('清空卡片')),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _CountRow(counts: counts),
-              const SizedBox(height: 12),
-              LinearProgressIndicator(
-                value: ratio,
-                minHeight: 6,
-                color: module.color,
-              ),
-            ],
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('整体掌握度', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            MasteryCountRow(counts: counts),
+            const SizedBox(height: 16),
+            MasteryBar(counts: counts),
+          ],
         ),
       ),
-    );
-  }
-}
-
-class _CountRow extends StatelessWidget {
-  final SrsCounts counts;
-
-  const _CountRow({required this.counts});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _Count(label: '已掌握', value: counts.mastered, color: Colors.green),
-        _Count(label: '学习中', value: counts.learning, color: Colors.blue),
-        _Count(label: '未学', value: counts.unseen, color: Colors.grey),
-      ],
-    );
-  }
-}
-
-class _Count extends StatelessWidget {
-  final String label;
-  final int value;
-  final Color color;
-
-  const _Count({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          '$value',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      ],
     );
   }
 }

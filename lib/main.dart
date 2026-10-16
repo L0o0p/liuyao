@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'screens/atlas_screen.dart';
-import 'screens/learn_screen.dart';
-import 'screens/progress_screen.dart';
+import 'screens/chapters_screen.dart';
+import 'screens/mine_screen.dart';
 import 'screens/today_screen.dart';
 import 'services/storage_service.dart';
 import 'services/sync/sync_engine.dart';
@@ -38,7 +37,6 @@ class MyApp extends StatelessWidget {
           seedColor: const Color(0xFF673AB7),
           secondary: const Color(0xFFFFD700), // 金色
           surface: const Color(0xFFFAFAFA), // 浅灰背景
-          background: const Color(0xFFFFFFFF), // 纯白背景
         ),
 
         // 字体主题
@@ -153,15 +151,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final pages = [
       TodayScreen(
-        onOpenModules: () {
+        onOpenChapters: () {
           setState(() {
             _selectedIndex = 1;
           });
         },
       ),
-      const LearnScreen(),
-      const AtlasScreen(),
-      const ProgressScreen(),
+      const ChaptersScreen(),
+      const MineScreen(),
     ];
     return Scaffold(
       body: pages[_selectedIndex],
@@ -171,9 +168,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.today), label: '今日'),
-          BottomNavigationBarItem(icon: Icon(Icons.school), label: '学习'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: '图鉴'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '进度'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: '章节'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: '我的'),
         ],
       ),
     );

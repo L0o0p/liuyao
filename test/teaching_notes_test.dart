@@ -24,7 +24,7 @@ void main() {
 
   test('图鉴覆盖主要对照表', () {
     final titles = buildAtlasChapters().map((chapter) => chapter.title).toList();
-    expect(titles, containsAll(['十天干', '十二地支', '五行生克', '十二支指诀', '刑冲合害', '十二长生', '六十四卦']));
+    expect(titles, ['五行生克', '天干', '地支', '刑冲合害', '十二长生', '六十四卦']);
     final gua = buildAtlasChapters().firstWhere(
       (chapter) => chapter.title == '六十四卦',
     );

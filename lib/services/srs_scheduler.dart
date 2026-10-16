@@ -203,6 +203,29 @@ class SrsScheduler {
     return SrsCounts(mastered: mastered, learning: learning, unseen: unseen);
   }
 
+  /// 连续学习天数，按本地日历日计。
+  /// 卡片只留最后一次复习时间，同一张卡更早的复习日看不到，所以结果只会偏少。
+  /// 今天还没复习时从昨天往前数，不让连续记录在当天早上就断掉。
+  static int studyStreakDays(Iterable<SrsCard> cards, DateTime now) {
+    final days = <DateTime>{};
+    for (final card in cards) {
+      final reviewed = card.lastReviewedAt?.toLocal();
+      if (reviewed == null) continue;
+      days.add(DateTime(reviewed.year, reviewed.month, reviewed.day));
+    }
+    final local = now.toLocal();
+    var day = DateTime(local.year, local.month, local.day);
+    if (!days.contains(day)) {
+      day = DateTime(day.year, day.month, day.day - 1);
+    }
+    var streak = 0;
+    while (days.contains(day)) {
+      streak++;
+      day = DateTime(day.year, day.month, day.day - 1);
+    }
+    return streak;
+  }
+
   static double _nextIntervalDays({
     required SrsState state,
     required double intervalDays,

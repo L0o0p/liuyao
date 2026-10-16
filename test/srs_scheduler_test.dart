@@ -439,4 +439,53 @@ void main() {
       isFalse,
     );
   });
+
+  group('连续学习天数', () {
+    SrsCard reviewedAt(String itemKey, DateTime? at) {
+      return SrsCard(
+        itemKey: itemKey,
+        state: SrsState.review,
+        dueAt: now,
+        intervalDays: 1,
+        lastReviewedAt: at,
+      );
+    }
+
+    test('没有复习记录是 0', () {
+      expect(SrsScheduler.studyStreakDays(const [], now), 0);
+      expect(SrsScheduler.studyStreakDays([reviewedAt('a', null)], now), 0);
+    });
+
+    test('从今天往前数连续有复习的日子，中间断一天就停', () {
+      final cards = [
+        reviewedAt('a', DateTime(2026, 10, 15, 7)),
+        reviewedAt('b', DateTime(2026, 10, 14, 23, 50)),
+        reviewedAt('c', DateTime(2026, 10, 13, 0, 5)),
+        reviewedAt('d', DateTime(2026, 10, 13, 12)),
+        reviewedAt('e', DateTime(2026, 10, 11, 12)),
+      ];
+      expect(SrsScheduler.studyStreakDays(cards, now), 3);
+    });
+
+    test('今天还没复习时从昨天算起', () {
+      final cards = [
+        reviewedAt('a', DateTime(2026, 10, 14, 20)),
+        reviewedAt('b', DateTime(2026, 10, 13, 20)),
+      ];
+      expect(SrsScheduler.studyStreakDays(cards, now), 2);
+    });
+
+    test('最近一次复习在前天就算断了', () {
+      final cards = [reviewedAt('a', DateTime(2026, 10, 13, 20))];
+      expect(SrsScheduler.studyStreakDays(cards, now), 0);
+    });
+
+    test('跨月按日历日连续', () {
+      final cards = [
+        reviewedAt('a', DateTime(2026, 11, 1, 8)),
+        reviewedAt('b', DateTime(2026, 10, 31, 8)),
+      ];
+      expect(SrsScheduler.studyStreakDays(cards, DateTime(2026, 11, 1, 9)), 2);
+    });
+  });
 }

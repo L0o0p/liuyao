@@ -108,24 +108,6 @@ class KnowledgeCatalog {
     'xiang_to_gua': '六十四卦',
   };
 
-  /// 学习页根目录的模块顺序。天干地支入口不在这里，它是子菜单。
-  static const learnRootIds = <String>[
-    '64gua',
-    'wuxing',
-    'hechong',
-    'shierchangsheng',
-    'comprehensive',
-  ];
-
-  static const tianganMenuIds = <String>[
-    'tiangandizhi_comprehensive',
-    'tiangandizhi_wuxing',
-    'tiangandizhi_yinyang',
-    'tiangandizhi_direction',
-    'tiangandizhi_time',
-    'tiangandizhi_shengke',
-  ];
-
   static final List<KnowledgeItem> items = _buildItems();
 
   static final Map<String, KnowledgeItem> _byKey = {

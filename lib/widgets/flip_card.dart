@@ -13,6 +13,9 @@ class FlipCard extends StatefulWidget {
   /// 答错时附在正确答案下面的说明。
   final String? wrongHint;
 
+  /// 答错讲解里的「查表」。外部压栈打开，返回时本卡状态不变。
+  final VoidCallback? onLookup;
+
   const FlipCard({
     super.key,
     required this.question,
@@ -20,6 +23,7 @@ class FlipCard extends StatefulWidget {
     this.onWrongAnswer,
     this.onNext,
     this.wrongHint,
+    this.onLookup,
   });
 
   @override
@@ -77,10 +81,12 @@ class _FlipCardState extends State<FlipCard> {
                   horizontal: 20,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).primaryColor.withOpacity(0.2),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -103,7 +109,7 @@ class _FlipCardState extends State<FlipCard> {
 
                 Color buttonColor = Theme.of(
                   context,
-                ).primaryColor.withOpacity(0.6);
+                ).primaryColor.withValues(alpha: 0.6);
                 if (hasAnswered) {
                   // 确保正确答案总是绿色
                   if (isCorrectOption) {
@@ -159,7 +165,9 @@ class _FlipCardState extends State<FlipCard> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: hasAnswered
                           ? buttonColor
-                          : Theme.of(context).primaryColor.withOpacity(0.1),
+                          : Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.1),
                       foregroundColor: hasAnswered
                           ? Colors.white
                           : Theme.of(context).primaryColor,
@@ -171,7 +179,7 @@ class _FlipCardState extends State<FlipCard> {
                       ),
                       elevation: hasAnswered ? 2 : 0,
                       shadowColor: hasAnswered
-                          ? buttonColor.withOpacity(0.3)
+                          ? buttonColor.withValues(alpha: 0.3)
                           : Colors.transparent,
                     ),
                     child: Text(
@@ -180,7 +188,7 @@ class _FlipCardState extends State<FlipCard> {
                     ),
                   ),
                 );
-              }).toList(),
+              }),
 
               // 选择后的反馈显示
               if (hasAnswered) ...[
@@ -204,7 +212,7 @@ class _FlipCardState extends State<FlipCard> {
                     boxShadow: [
                       BoxShadow(
                         color: (isCorrect ? Colors.green : Colors.red)
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -245,6 +253,20 @@ class _FlipCardState extends State<FlipCard> {
                     ],
                   ),
                 ),
+                if (!isCorrect && widget.onLookup != null) ...[
+                  SizedBox(height: isSmallScreen ? 12.0 : 16.0),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: widget.onLookup,
+                      icon: const Icon(Icons.table_chart_outlined),
+                      label: Text(
+                        '查表',
+                        style: TextStyle(fontSize: buttonFontSize),
+                      ),
+                    ),
+                  ),
+                ],
                 // 答错时由用户确认看清答案后再进入下一题
                 if (!isCorrect && widget.onNext != null) ...[
                   SizedBox(height: isSmallScreen ? 12.0 : 16.0),

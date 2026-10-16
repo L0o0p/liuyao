@@ -8,9 +8,9 @@ import 'study_session_screen.dart';
 
 /// 今日学习：先复习到期卡片，再在每日额度内引入新卡。
 class TodayScreen extends StatefulWidget {
-  final VoidCallback? onOpenModules;
+  final VoidCallback? onOpenChapters;
 
-  const TodayScreen({super.key, this.onOpenModules});
+  const TodayScreen({super.key, this.onOpenChapters});
 
   @override
   State<TodayScreen> createState() => _TodayScreenState();
@@ -143,15 +143,15 @@ class _TodayScreenState extends State<TodayScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '还可以到「学习」里按模块巩固',
+                        '还可以到「章节」里按章巩固',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 24),
-                      if (widget.onOpenModules != null)
+                      if (widget.onOpenChapters != null)
                         OutlinedButton(
-                          onPressed: widget.onOpenModules,
-                          child: const Text('去模块巩固'),
+                          onPressed: widget.onOpenChapters,
+                          child: const Text('去章节巩固'),
                         ),
                     ] else
                       FilledButton(

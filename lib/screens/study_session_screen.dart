@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/chapters.dart';
 import '../data/knowledge_catalog.dart';
 import '../data/teaching_notes.dart';
 import '../models/question.dart';
@@ -11,6 +12,7 @@ import '../services/storage_service.dart';
 import '../services/sync/sync_engine.dart';
 import '../widgets/flip_card.dart';
 import '../widgets/teaching_card.dart';
+import 'chapter_tables_screen.dart';
 
 /// 消费一份已经排好的知识点队列。
 /// 答错，或有失误后连续答对还没到 2 次，都会把同一条再放到本次队列末尾。
@@ -223,12 +225,37 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
     _schedulePrepare();
   }
 
+  Chapter? get _currentChapter {
+    if (_loading || _error != null) return null;
+    if (_index < 0 || _index >= _questions.length) return null;
+    return Chapters.forQuestionType(_questions[_index].questionType);
+  }
+
+  /// 压栈打开，不动本页状态，返回时还在原题。
+  void _openTables(Chapter chapter) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ChapterTablesScreen(chapter: chapter),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final chapter = _currentChapter;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
+          if (chapter != null)
+            TextButton.icon(
+              onPressed: () => _openTables(chapter),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+              ),
+              icon: const Icon(Icons.table_chart_outlined),
+              label: const Text('查表'),
+            ),
           if (!_loading && _error == null && _questions.isNotEmpty)
             Center(
               child: Padding(
@@ -269,6 +296,7 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     final note = TeachingNotes.forKey(question.itemKey);
+    final chapter = Chapters.forQuestionType(question.questionType);
     if (_showTeaching && note != null) {
       return TeachingCard(
         note: note,
@@ -284,6 +312,7 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
         key: ValueKey('$_index:${question.itemKey}:${question.text}'),
         question: question,
         wrongHint: note == null ? null : '${note.fact}。${note.hint}',
+        onLookup: chapter == null ? null : () => _openTables(chapter),
         onCorrectAnswer: (elapsed) {
           _pendingGrade = _handleCorrect(elapsed);
         },
