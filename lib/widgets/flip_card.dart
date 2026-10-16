@@ -10,12 +10,16 @@ class FlipCard extends StatefulWidget {
   /// 答错后点击「下一题」，由外部页面负责翻页
   final VoidCallback? onNext;
 
+  /// 答错时附在正确答案下面的说明。
+  final String? wrongHint;
+
   const FlipCard({
     super.key,
     required this.question,
     this.onCorrectAnswer,
     this.onWrongAnswer,
     this.onNext,
+    this.wrongHint,
   });
 
   @override
@@ -228,6 +232,16 @@ class _FlipCardState extends State<FlipCard> {
                         style: TextStyle(fontSize: buttonFontSize),
                         textAlign: TextAlign.center,
                       ),
+                      if (!isCorrect &&
+                          widget.wrongHint != null &&
+                          widget.wrongHint!.isNotEmpty) ...[
+                        SizedBox(height: isSmallScreen ? 8.0 : 12.0),
+                        Text(
+                          widget.wrongHint!,
+                          style: TextStyle(fontSize: buttonFontSize - 2),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ],
                   ),
                 ),

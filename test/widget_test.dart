@@ -14,7 +14,15 @@ void main() {
     expect(find.text('今日学习'), findsOneWidget);
     expect(find.text('今日'), findsOneWidget);
     expect(find.text('学习'), findsOneWidget);
+    expect(find.text('图鉴'), findsOneWidget);
     expect(find.text('进度'), findsOneWidget);
+
+    await tester.tap(find.text('图鉴'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('十天干'), findsOneWidget);
+    expect(find.text('十二地支'), findsOneWidget);
     expect(find.text('复习'), findsNothing);
   });
 }

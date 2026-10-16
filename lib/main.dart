@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'screens/atlas_screen.dart';
 import 'screens/learn_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/today_screen.dart';
@@ -159,16 +160,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         },
       ),
       const LearnScreen(),
+      const AtlasScreen(),
       const ProgressScreen(),
     ];
     return Scaffold(
       body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.today), label: '今日'),
           BottomNavigationBarItem(icon: Icon(Icons.school), label: '学习'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: '图鉴'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '进度'),
         ],
       ),

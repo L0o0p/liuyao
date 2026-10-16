@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/knowledge_catalog.dart';
+import '../data/teaching_notes.dart';
 import '../models/question.dart';
 import '../models/srs_card.dart';
 import '../services/srs_scheduler.dart';
 import '../services/storage_service.dart';
 import '../services/sync/sync_engine.dart';
 import '../widgets/flip_card.dart';
+import '../widgets/teaching_card.dart';
 
 /// 消费一份已经排好的知识点队列。答错会把同一条再放到本次队列末尾。
 class StudySessionScreen extends StatefulWidget {
@@ -35,6 +37,8 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
   int _index = 0;
   int _answered = 0;
   bool _loading = true;
+  bool _prepared = false;
+  bool _showTeaching = false;
   String? _error;
   Future<void>? _ready;
   Future<void>? _pendingGrade;
@@ -82,20 +86,29 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
 
   void _schedulePrepare() {
     if (_index < 0 || _index >= _questions.length) return;
+    _prepared = false;
+    _showTeaching = false;
     _ready = _prepareCurrent();
   }
 
   Future<void> _prepareCurrent() async {
     final key = _questions[_index].itemKey;
-    if (_cards.containsKey(key)) return;
-    final existing = await StorageService.loadCard(key);
-    if (existing != null) {
-      _cards[key] = existing;
-      return;
+    if (!_cards.containsKey(key)) {
+      final existing = await StorageService.loadCard(key);
+      if (existing != null) {
+        _cards[key] = existing;
+      } else {
+        final created = SrsScheduler.introduce(key, DateTime.now());
+        await StorageService.saveCard(created);
+        _cards[key] = created;
+      }
     }
-    final created = SrsScheduler.introduce(key, DateTime.now());
-    await StorageService.saveCard(created);
-    _cards[key] = created;
+    if (!mounted || _questions[_index].itemKey != key) return;
+    final card = _cards[key]!;
+    setState(() {
+      _prepared = true;
+      _showTeaching = card.reps == 0 && card.lastReviewedAt == null;
+    });
   }
 
   Future<void> _grade(bool correct, Duration elapsed) async {
@@ -233,10 +246,25 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
       return const Center(child: Text('没有要练习的内容'));
     }
     final question = _questions[_index];
+    if (!_prepared) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final note = TeachingNotes.forKey(question.itemKey);
+    if (_showTeaching && note != null) {
+      return TeachingCard(
+        note: note,
+        onContinue: () {
+          setState(() {
+            _showTeaching = false;
+          });
+        },
+      );
+    }
     return SafeArea(
       child: FlipCard(
         key: ValueKey('$_index:${question.itemKey}:${question.text}'),
         question: question,
+        wrongHint: note == null ? null : '${note.fact}。${note.hint}',
         onCorrectAnswer: (elapsed) {
           _pendingGrade = _handleCorrect(elapsed);
         },
