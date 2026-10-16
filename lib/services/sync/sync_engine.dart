@@ -67,7 +67,7 @@ class SyncEngine {
     return result;
   }
 
-  /// 把进度和错题打成一份可分享的 JSON。
+  /// 把复习卡片打成一份可分享的 JSON。
   Future<Map<String, dynamic>> exportDocument() async {
     final items = <String, Map<String, dynamic>>{};
     for (final prefix in [LocalStore.srsPrefix]) {
@@ -87,6 +87,7 @@ class SyncEngine {
   }
 
   /// 校验导出文件，再按合并规则写入。不会覆盖本地较新的数据。
+  /// 版本 2 的备份（进度和错题）先按启动迁移的规则转成复习卡片。
   Future<ImportResult> importJson(String raw) async {
     final decoded = jsonDecode(raw);
     if (decoded is! Map) {
@@ -94,7 +95,7 @@ class SyncEngine {
     }
     final document = Map<String, dynamic>.from(decoded);
     final version = document['schema_version'];
-    if (version is! num || version != LocalStore.currentSchemaVersion) {
+    if (version != 2 && version != LocalStore.currentSchemaVersion) {
       throw FormatException('不支持的学习数据版本：$version');
     }
     final itemsRaw = document['items'];
@@ -102,18 +103,28 @@ class SyncEngine {
       throw const FormatException('学习数据缺少 items');
     }
 
-    final incoming = <String, Map<String, dynamic>>{};
+    final items = <String, Map<String, dynamic>>{};
     for (final entry in itemsRaw.entries) {
       final key = entry.key.toString();
-      if (!key.startsWith(LocalStore.srsPrefix)) {
-        continue;
-      }
       if (entry.value is! Map) {
         throw FormatException('条目格式不正确：$key');
       }
-      final value = Map<String, dynamic>.from(entry.value as Map);
-      value['updatedAt'] = LocalStore.updatedAtOf(value);
-      incoming[key] = value;
+      items[key] = Map<String, dynamic>.from(entry.value as Map);
+    }
+
+    final incoming = <String, Map<String, dynamic>>{};
+    if (version == 2) {
+      final cards = LocalStore.cardsFromVersion2(items, DateTime.now());
+      for (final card in cards.values) {
+        incoming['${LocalStore.srsPrefix}${card.itemKey}'] = card.toJson();
+      }
+    } else {
+      for (final entry in items.entries) {
+        if (!entry.key.startsWith(LocalStore.srsPrefix)) continue;
+        final value = entry.value;
+        value['updatedAt'] = LocalStore.updatedAtOf(value);
+        incoming[entry.key] = value;
+      }
     }
 
     return _applyIncoming(incoming);

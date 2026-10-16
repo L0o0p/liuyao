@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../data/knowledge_catalog.dart';
 import '../models/srs_card.dart';
@@ -19,6 +24,7 @@ class ProgressScreen extends StatefulWidget {
 class _ProgressScreenState extends State<ProgressScreen> {
   Map<String, SrsCard> _cards = {};
   bool _loading = true;
+  bool _transferring = false;
 
   @override
   void initState() {
@@ -40,6 +46,100 @@ class _ProgressScreenState extends State<ProgressScreen> {
       _cards = cards;
       _loading = false;
     });
+  }
+
+  /// 导出复习卡片，交给系统分享面板。
+  Future<void> _exportLearningData() async {
+    if (_transferring) return;
+    setState(() {
+      _transferring = true;
+    });
+    try {
+      final document = await SyncEngine.instance.exportDocument();
+      final file = File(
+        '${Directory.systemTemp.path}/liuyao-learning-data.json',
+      );
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(document),
+      );
+      if (!mounted) return;
+      final box = context.findRenderObject();
+      final origin = box is RenderBox && box.hasSize
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'application/json')],
+          subject: '六爻学习数据',
+          sharePositionOrigin: origin,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('导出失败：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _transferring = false;
+        });
+      }
+    }
+  }
+
+  /// 选择导出文件，按合并规则导入，不覆盖本地较新的数据。
+  Future<void> _importLearningData() async {
+    if (_transferring) return;
+    setState(() {
+      _transferring = true;
+    });
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final picked = result.files.single;
+      final String raw;
+      if (picked.bytes != null) {
+        raw = utf8.decode(picked.bytes!);
+      } else if (picked.path != null) {
+        raw = await File(picked.path!).readAsString();
+      } else {
+        throw const FormatException('无法读取所选文件');
+      }
+
+      final summary = await SyncEngine.instance.importJson(raw);
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已导入 ${summary.applied} 条，本地保留 ${summary.keptLocal} 条'),
+        ),
+      );
+    } on FormatException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('导入失败：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _transferring = false;
+        });
+      }
+    }
   }
 
   Future<void> _clearModule(String moduleId, String moduleName) async {
@@ -152,6 +252,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  _TransferCard(
+                    busy: _transferring,
+                    onExport: _exportLearningData,
+                    onImport: _importLearningData,
+                  ),
+                  const SizedBox(height: 12),
                   OutlinedButton(
                     onPressed: _clearAll,
                     style: OutlinedButton.styleFrom(
@@ -163,6 +269,59 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _TransferCard extends StatelessWidget {
+  final bool busy;
+  final VoidCallback onExport;
+  final VoidCallback onImport;
+
+  const _TransferCard({
+    required this.busy,
+    required this.onExport,
+    required this.onImport,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.folder_outlined,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(width: 8),
+                Text('学习数据', style: Theme.of(context).textTheme.titleLarge),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '可导出到文件，换机时再导入。导入会与本机数据合并，不会覆盖较新的记录。旧版本导出的备份也能导入。',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: busy ? null : onExport,
+              icon: const Icon(Icons.ios_share),
+              label: const Text('导出学习数据'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: busy ? null : onImport,
+              icon: const Icon(Icons.file_open_outlined),
+              label: const Text('导入学习数据'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

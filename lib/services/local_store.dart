@@ -194,7 +194,6 @@ class LocalStore {
   /// 对得上 itemKey 且分数 >= 60 的熟练度变成 review，间隔按分数映射到 1–7 天；
   /// 其余已学条目变成 learning，立刻到期。两边都有时，错题把到期时间拉到现在。
   Future<void> _migrateToSrs(SharedPreferences prefs) async {
-    final now = DateTime.now();
     final oldKeys = prefs
         .getKeys()
         .where(
@@ -202,12 +201,33 @@ class LocalStore {
         )
         .toList();
 
+    final records = <String, Map<String, dynamic>>{};
+    for (final key in oldKeys) {
+      final map = _readObject(prefs, key);
+      if (map != null) records[key] = map;
+    }
+    final cards = cardsFromVersion2(records, DateTime.now());
+
+    for (final card in cards.values) {
+      await writeRaw('$srsPrefix${card.itemKey}', card.toJson(), pending: true);
+    }
+    for (final key in oldKeys) {
+      await prefs.remove(key);
+    }
+  }
+
+  /// 把版本 2 的 progress: 和 wrong: 记录转成复习卡片。
+  /// 启动迁移和导入旧备份共用这一套规则。
+  static Map<String, SrsCard> cardsFromVersion2(
+    Map<String, Map<String, dynamic>> records,
+    DateTime now,
+  ) {
     final cards = <String, SrsCard>{};
 
-    for (final key in oldKeys) {
-      if (!key.startsWith(progressPrefix)) continue;
-      final map = _readObject(prefs, key);
-      if (map == null || map['deleted'] == true) continue;
+    for (final entry in records.entries) {
+      if (!entry.key.startsWith(progressPrefix)) continue;
+      final map = entry.value;
+      if (map['deleted'] == true) continue;
       final progressUpdated = updatedAtOf(map);
       final scores = <String, int>{};
       final proficiency = map['proficiency'];
@@ -257,10 +277,10 @@ class LocalStore {
       }
     }
 
-    for (final key in oldKeys) {
-      if (!key.startsWith(wrongPrefix)) continue;
-      final map = _readObject(prefs, key);
-      if (map == null || map['deleted'] == true) continue;
+    for (final entry in records.entries) {
+      if (!entry.key.startsWith(wrongPrefix)) continue;
+      final map = entry.value;
+      if (map['deleted'] == true) continue;
       final type = map['questionType'];
       final input = map['input'];
       if (type is! String ||
@@ -298,12 +318,7 @@ class LocalStore {
       }
     }
 
-    for (final card in cards.values) {
-      await writeRaw('$srsPrefix${card.itemKey}', card.toJson(), pending: true);
-    }
-    for (final key in oldKeys) {
-      await prefs.remove(key);
-    }
+    return cards;
   }
 
   static int updatedAtOf(Map<String, dynamic> value) {

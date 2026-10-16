@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liuyao/models/srs_card.dart';
 import 'package:liuyao/services/local_store.dart';
 import 'package:liuyao/services/storage_service.dart';
 import 'package:liuyao/services/sync/sync_backend.dart';
@@ -149,6 +150,40 @@ void main() {
     expect(newer.applied, 2);
     expect((await StorageService.loadCard('gan_wuxing:甲'))!.reps, 9);
     expect((await StorageService.loadCard('gan_wuxing:乙'))!.reps, 1);
+  });
+
+  test('旧版本 2 的备份会转成复习卡片再导入', () async {
+    final progress = _progress('tiangandizhi_wuxing', 3, 100)
+      ..['proficiency'] = {'zhi_wuxing:子': 80}
+      ..['learnedItems'] = ['zhi_wuxing:子', 'gan_wuxing:乙'];
+    final summary = await SyncEngine.instance.importJson(
+      jsonEncode({
+        'schema_version': 2,
+        'exportedAt': 1,
+        'items': {
+          'progress:tiangandizhi_wuxing': progress,
+          'wrong:gan_wuxing:甲': {
+            'questionType': 'gan_wuxing',
+            'input': '甲',
+            'correctAnswer': '木',
+            'userAnswer': '火',
+            'wrongCount': 2,
+            'updatedAt': 120,
+          },
+        },
+      }),
+    );
+
+    expect(summary.applied, 3);
+    final wrong = (await StorageService.loadCard('gan_wuxing:甲'))!;
+    expect(wrong.state, SrsState.learning);
+    expect(wrong.lapses, 2);
+    expect(wrong.dueAt.isAfter(DateTime.now()), isFalse);
+    final strong = (await StorageService.loadCard('zhi_wuxing:子'))!;
+    expect(strong.state, SrsState.review);
+    expect(strong.intervalDays, greaterThan(1));
+    final learned = (await StorageService.loadCard('gan_wuxing:乙'))!;
+    expect(learned.state, SrsState.learning);
   });
 
   test('不支持的 schema_version 会被拒绝', () async {
