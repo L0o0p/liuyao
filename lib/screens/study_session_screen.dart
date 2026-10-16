@@ -12,7 +12,8 @@ import '../services/sync/sync_engine.dart';
 import '../widgets/flip_card.dart';
 import '../widgets/teaching_card.dart';
 
-/// 消费一份已经排好的知识点队列。答错会把同一条再放到本次队列末尾。
+/// 消费一份已经排好的知识点队列。
+/// 答错，或有失误后连续答对还没到 2 次，都会把同一条再放到本次队列末尾。
 class StudySessionScreen extends StatefulWidget {
   final String title;
   final Future<List<String>> Function() loadItemKeys;
@@ -33,6 +34,7 @@ class StudySessionScreen extends StatefulWidget {
 
 class _StudySessionScreenState extends State<StudySessionScreen> {
   final Map<String, SrsCard> _cards = {};
+  final Set<String> _missedKeys = {};
   List<Question> _questions = [];
   int _index = 0;
   int _answered = 0;
@@ -111,38 +113,55 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
     });
   }
 
-  Future<void> _grade(bool correct, Duration elapsed) async {
+  /// 返回这次作答后是否还要把当前知识点再放回队列末尾。
+  Future<bool> _grade(bool correct, Duration elapsed) async {
     await _ready;
-    if (_index < 0 || _index >= _questions.length) return;
+    if (_index < 0 || _index >= _questions.length) return false;
     final question = _questions[_index];
     final now = DateTime.now();
     final current =
         _cards[question.itemKey] ?? SrsScheduler.introduce(question.itemKey, now);
+    final missedInSession = _missedKeys.contains(question.itemKey);
+    final replay = SrsScheduler.replaysInSession(
+      card: current,
+      correct: correct,
+      missedInSession: missedInSession,
+    );
     final updated = SrsScheduler.grade(
       card: current,
       correct: correct,
       elapsed: elapsed,
       now: now,
+      missedInSession: missedInSession,
     );
+    if (!correct) _missedKeys.add(question.itemKey);
     _cards[question.itemKey] = updated;
     await StorageService.saveCard(updated);
+    return replay;
+  }
+
+  void _appendCurrentAgain() {
+    if (_index < 0 || _index >= _questions.length) return;
+    final again = _questionFor(_questions[_index].itemKey);
+    if (again == null) return;
+    _questions.add(again);
   }
 
   Future<void> _handleCorrect(Duration elapsed) async {
-    await _grade(true, elapsed);
+    final replay = await _grade(true, elapsed);
     if (!mounted) return;
+    if (replay) {
+      setState(_appendCurrentAgain);
+    }
     await _advance();
   }
 
   Future<void> _handleWrong(Duration elapsed) async {
-    await _grade(false, elapsed);
+    final replay = await _grade(false, elapsed);
     if (!mounted || _index >= _questions.length) return;
-    final question = _questions[_index];
-    final again = _questionFor(question.itemKey);
-    if (again == null) return;
-    setState(() {
-      _questions.add(again);
-    });
+    if (replay) {
+      setState(_appendCurrentAgain);
+    }
   }
 
   Future<void> _advance() async {

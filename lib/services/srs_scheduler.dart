@@ -45,14 +45,16 @@ class SrsScheduler {
   }
 
   /// 二元评分。
-  /// 答错：回到 learning，10 分钟后再到期。
-  /// 答对且不超过 8 秒：learning 毕业为 1 天；review 间隔乘 ease，封顶 180 天。
-  /// 答对但更慢：仍毕业到 review，这次间隔增长打五折。
+  /// 答错：连续答对清零，回到 learning，间隔清掉，10 分钟后再到期。
+  /// 有失误且连续答对还没到 2：记一次答对，但间隔先不拉长。
+  /// 没失误过，或连续第二次答对：learning 毕业为 1 天；review 间隔乘 ease，封顶 180 天。
+  /// 超过 8 秒的间隔折扣只作用在这一次真正毕业上。
   static SrsCard grade({
     required SrsCard card,
     required bool correct,
     required Duration elapsed,
     required DateTime now,
+    bool missedInSession = false,
   }) {
     final reviewed = card.copyWith(reps: card.reps + 1, lastReviewedAt: now);
     if (!correct) {
@@ -61,7 +63,13 @@ class SrsScheduler {
         intervalDays: 0,
         dueAt: now.add(SrsLimits.lapseDelay),
         lapses: card.lapses + 1,
+        correctStreak: 0,
       );
+    }
+
+    final nextStreak = card.correctStreak + 1;
+    if (_awaitingSecondCorrect(card, missedInSession: missedInSession)) {
+      return reviewed.copyWith(correctStreak: nextStreak);
     }
 
     final days = _nextIntervalDays(
@@ -74,7 +82,27 @@ class SrsScheduler {
       state: SrsState.review,
       intervalDays: days,
       dueAt: addDays(now, days),
+      correctStreak: nextStreak,
     );
+  }
+
+  /// 答错，或有失误且这次答对还凑不满连续 2 次时，同一条还要留在本次队列末尾。
+  static bool replaysInSession({
+    required SrsCard card,
+    required bool correct,
+    bool missedInSession = false,
+  }) {
+    if (!correct) return true;
+    return _awaitingSecondCorrect(card, missedInSession: missedInSession);
+  }
+
+  /// [card] 是这次答对之前的卡片。
+  static bool _awaitingSecondCorrect(
+    SrsCard card, {
+    required bool missedInSession,
+  }) {
+    final hadMistake = card.lapses > 0 || missedInSession;
+    return hadMistake && card.correctStreak + 1 < 2;
   }
 
   /// 60 分映射到 1 天，100 分映射到 7 天。

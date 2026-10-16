@@ -1,5 +1,5 @@
 /// 一条知识点的复习卡片。
-/// 二元评分：答对进入或留在 review，答错回到 learning。
+/// 二元评分：没失误过的答对进入 review；有失误时要连续答对两次才拉长间隔。答错回到 learning。
 enum SrsState { learning, review }
 
 /// 调度里不变的界限。
@@ -20,6 +20,9 @@ class SrsCard {
   final double ease;
   final int lapses;
   final int reps;
+
+  /// 连续答对次数。答错清零。旧数据缺这个字段时当作 0。
+  final int correctStreak;
   final DateTime? lastReviewedAt;
   final int updatedAt;
 
@@ -31,6 +34,7 @@ class SrsCard {
     this.ease = SrsLimits.initialEase,
     this.lapses = 0,
     this.reps = 0,
+    this.correctStreak = 0,
     this.lastReviewedAt,
     this.updatedAt = 0,
   });
@@ -46,6 +50,7 @@ class SrsCard {
     double? ease,
     int? lapses,
     int? reps,
+    int? correctStreak,
     DateTime? lastReviewedAt,
     int? updatedAt,
   }) {
@@ -57,6 +62,7 @@ class SrsCard {
       ease: ease ?? this.ease,
       lapses: lapses ?? this.lapses,
       reps: reps ?? this.reps,
+      correctStreak: correctStreak ?? this.correctStreak,
       lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -71,6 +77,7 @@ class SrsCard {
       'ease': ease,
       'lapses': lapses,
       'reps': reps,
+      'correctStreak': correctStreak,
       if (lastReviewedAt != null)
         'lastReviewedAt': lastReviewedAt!.millisecondsSinceEpoch,
       'updatedAt': updatedAt,
@@ -94,6 +101,7 @@ class SrsCard {
       ease: _asDouble(json['ease']) ?? SrsLimits.initialEase,
       lapses: _asInt(json['lapses']) ?? 0,
       reps: _asInt(json['reps']) ?? 0,
+      correctStreak: _asInt(json['correctStreak']) ?? 0,
       lastReviewedAt: _asTime(json['lastReviewedAt']),
       updatedAt: _asInt(json['updatedAt']) ?? 0,
     );

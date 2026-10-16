@@ -17,8 +17,12 @@ void main() {
     );
   }
 
-  test('答错把间隔缩到 10 分钟，再答对时按学习卡毕业', () {
+  test('答错后连续一次答对仍留在待清除，第二次才毕业并不再入队', () {
     final card = reviewCard('gan_wuxing:甲', now.add(const Duration(days: 4)), 4);
+    expect(
+      SrsScheduler.replaysInSession(card: card, correct: false),
+      isTrue,
+    );
     final wrong = SrsScheduler.grade(
       card: card,
       correct: false,
@@ -29,20 +33,197 @@ void main() {
     expect(wrong.state, SrsState.learning);
     expect(wrong.intervalDays, 0);
     expect(wrong.lapses, 1);
+    expect(wrong.correctStreak, 0);
     expect(wrong.reps, 3);
     expect(wrong.lastReviewedAt, now);
     expect(wrong.dueAt, now.add(const Duration(minutes: 10)));
     expect(wrong.dueAt.isBefore(card.dueAt), isTrue);
 
-    final recovered = SrsScheduler.grade(
+    expect(
+      SrsScheduler.replaysInSession(card: wrong, correct: true),
+      isTrue,
+    );
+    final once = SrsScheduler.grade(
       card: wrong,
+      correct: true,
+      elapsed: const Duration(seconds: 9),
+      now: now,
+    );
+    expect(once.state, SrsState.learning);
+    expect(once.intervalDays, 0);
+    expect(once.lapses, 1);
+    expect(once.correctStreak, 1);
+    expect(once.reps, 4);
+    expect(once.dueAt, wrong.dueAt);
+    expect(once.dueAt, isNot(now.add(const Duration(days: 1))));
+
+    expect(
+      SrsScheduler.replaysInSession(card: once, correct: true),
+      isFalse,
+    );
+    final recovered = SrsScheduler.grade(
+      card: once,
       correct: true,
       elapsed: const Duration(seconds: 3),
       now: now,
     );
     expect(recovered.state, SrsState.review);
     expect(recovered.intervalDays, 1);
+    expect(recovered.correctStreak, 2);
     expect(recovered.dueAt, now.add(const Duration(days: 1)));
+
+    final slowGraduation = SrsScheduler.grade(
+      card: once,
+      correct: true,
+      elapsed: const Duration(seconds: 9),
+      now: now,
+    );
+    expect(slowGraduation.state, SrsState.review);
+    expect(slowGraduation.intervalDays, 0.5);
+    expect(slowGraduation.correctStreak, 2);
+  });
+
+  test('连续答对中间再答错会清零，并继续留在队列', () {
+    final once = SrsCard(
+      itemKey: 'gan_wuxing:甲',
+      state: SrsState.learning,
+      dueAt: now.add(const Duration(minutes: 10)),
+      intervalDays: 0,
+      lapses: 1,
+      reps: 2,
+      correctStreak: 1,
+    );
+
+    expect(
+      SrsScheduler.replaysInSession(card: once, correct: false),
+      isTrue,
+    );
+    final reset = SrsScheduler.grade(
+      card: once,
+      correct: false,
+      elapsed: const Duration(seconds: 2),
+      now: now,
+    );
+    expect(reset.correctStreak, 0);
+    expect(reset.lapses, 2);
+    expect(reset.state, SrsState.learning);
+    expect(reset.intervalDays, 0);
+    expect(reset.dueAt, now.add(const Duration(minutes: 10)));
+
+    expect(
+      SrsScheduler.replaysInSession(card: reset, correct: true),
+      isTrue,
+    );
+    final again = SrsScheduler.grade(
+      card: reset,
+      correct: true,
+      elapsed: const Duration(seconds: 2),
+      now: now,
+    );
+    expect(again.correctStreak, 1);
+    expect(again.state, SrsState.learning);
+    expect(again.intervalDays, 0);
+  });
+
+  test('没失误过的卡答对一次就毕业，不再入队', () {
+    final introduced = SrsScheduler.introduce('gan_wuxing:甲', now);
+    expect(introduced.correctStreak, 0);
+    expect(introduced.lapses, 0);
+    expect(
+      SrsScheduler.replaysInSession(card: introduced, correct: true),
+      isFalse,
+    );
+
+    final graduated = SrsScheduler.grade(
+      card: introduced,
+      correct: true,
+      elapsed: const Duration(seconds: 5),
+      now: now,
+    );
+    expect(graduated.state, SrsState.review);
+    expect(graduated.intervalDays, 1);
+    expect(graduated.correctStreak, 1);
+    expect(graduated.dueAt, now.add(const Duration(days: 1)));
+
+    final reviewing = reviewCard('gan_wuxing:乙', now, 4);
+    expect(
+      SrsScheduler.replaysInSession(card: reviewing, correct: true),
+      isFalse,
+    );
+    final extended = SrsScheduler.grade(
+      card: reviewing,
+      correct: true,
+      elapsed: const Duration(seconds: 3),
+      now: now,
+    );
+    expect(extended.intervalDays, 10);
+    expect(extended.correctStreak, 1);
+    expect(extended.state, SrsState.review);
+  });
+
+  test('本次会话里答过错时，即使卡片还没记上 lapses 也要再答一次', () {
+    final introduced = SrsScheduler.introduce('gan_wuxing:甲', now);
+    expect(
+      SrsScheduler.replaysInSession(
+        card: introduced,
+        correct: true,
+        missedInSession: true,
+      ),
+      isTrue,
+    );
+    final held = SrsScheduler.grade(
+      card: introduced,
+      correct: true,
+      elapsed: const Duration(seconds: 20),
+      now: now,
+      missedInSession: true,
+    );
+    expect(held.state, SrsState.learning);
+    expect(held.intervalDays, 0);
+    expect(held.correctStreak, 1);
+    expect(held.dueAt, introduced.dueAt);
+
+    expect(
+      SrsScheduler.replaysInSession(
+        card: held,
+        correct: true,
+        missedInSession: true,
+      ),
+      isFalse,
+    );
+    final cleared = SrsScheduler.grade(
+      card: held,
+      correct: true,
+      elapsed: const Duration(seconds: 3),
+      now: now,
+      missedInSession: true,
+    );
+    expect(cleared.state, SrsState.review);
+    expect(cleared.intervalDays, 1);
+    expect(cleared.correctStreak, 2);
+  });
+
+  test('旧 JSON 没有 correctStreak 时按 0 读取', () {
+    final card = SrsCard.fromJson({
+      'itemKey': 'gan_wuxing:甲',
+      'state': 'learning',
+      'dueAt': 0,
+      'intervalDays': 0,
+      'lapses': 2,
+      'reps': 3,
+    });
+    expect(card.correctStreak, 0);
+    expect(card.toJson()['correctStreak'], 0);
+
+    final kept = card.copyWith(reps: 4);
+    expect(kept.correctStreak, 0);
+    final marked = card.copyWith(correctStreak: 2);
+    expect(marked.correctStreak, 2);
+    expect(marked.lapses, 2);
+    expect(marked.toJson()['correctStreak'], 2);
+
+    final restored = SrsCard.fromJson(marked.toJson());
+    expect(restored.correctStreak, 2);
   });
 
   test('答对拉长间隔，慢答对增长更少', () {
