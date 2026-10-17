@@ -115,7 +115,7 @@ flutter_launcher_icons:
 
 # 启动屏幕配置
 flutter_native_splash:
-  color: "#F5F0E8"  # 米白色背景，与图片风格匹配
+  color: "#FDF9ED"  # 与开屏图背景一致
   image: assets/splash.png
   
   android: true
@@ -125,7 +125,7 @@ flutter_native_splash:
   # Android 12+ 配置
   android_12:
     image: assets/splash.png
-    color: "#F5F0E8"
+    color: "#FDF9ED"
   
   # 全屏模式
   fullscreen: true
