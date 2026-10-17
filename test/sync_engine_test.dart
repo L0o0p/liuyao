@@ -186,6 +186,81 @@ void main() {
     expect(learned.state, SrsState.learning);
   });
 
+  test('版本 3 备份里的十二长生卡导入后变成规则卡，重复导入不再改动', () async {
+    final weak = _card('changsheng:午_酉', 2, 100)..['lapses'] = 2;
+    final strong = _card('changsheng:巳_戌', 7, 150)
+      ..['state'] = 'review'
+      ..['intervalDays'] = 12;
+    final document = jsonEncode({
+      'schema_version': 3,
+      'exportedAt': 1,
+      'items': {
+        'srs:changsheng:午_酉': weak,
+        'srs:changsheng:巳_戌': strong,
+        'srs:changsheng:子_子': {'deleted': true, 'updatedAt': 90},
+        'srs:gan_wuxing:甲': _card('gan_wuxing:甲', 1, 100),
+      },
+    });
+
+    final first = await SyncEngine.instance.importJson(document);
+    // 午、巳都属火，并到起点卡「火」；午日酉爻是死，巳日戌爻是墓。
+    expect(first.applied, 4);
+    final fire = (await StorageService.loadCard('changsheng_start:火'))!;
+    expect(fire.state, SrsState.learning);
+    expect(fire.lapses, 2);
+    expect(fire.reps, 7);
+    expect(fire.updatedAt, 150);
+    final death = (await StorageService.loadCard('changsheng_stage:死'))!;
+    expect(death.lapses, 2);
+    final tomb = (await StorageService.loadCard('changsheng_stage:墓'))!;
+    expect(tomb.state, SrsState.review);
+    expect(tomb.intervalDays, 12);
+    expect(await LocalStore.instance.get('srs:changsheng:午_酉'), isNull);
+    expect(await LocalStore.instance.get('srs:changsheng:子_子'), isNull);
+
+    final second = await SyncEngine.instance.importJson(document);
+    expect(second.applied, 0);
+    expect(second.keptLocal, 4);
+  });
+
+  test('版本 2 备份里的十二长生错题也并到规则卡', () async {
+    final summary = await SyncEngine.instance.importJson(
+      jsonEncode({
+        'schema_version': 2,
+        'exportedAt': 1,
+        'items': {
+          'wrong:changsheng:午_酉': {
+            'questionType': 'changsheng',
+            'input': '午_酉',
+            'wrongCount': 3,
+            'updatedAt': 120,
+          },
+        },
+      }),
+    );
+    expect(summary.applied, 2);
+    final fire = (await StorageService.loadCard('changsheng_start:火'))!;
+    expect(fire.lapses, 3);
+    expect(fire.state, SrsState.learning);
+    expect((await StorageService.loadCard('changsheng_stage:死'))!.lapses, 3);
+  });
+
+  test('导出版本 4，版本 4 的文件可以导回', () async {
+    await LocalStore.instance.writeRaw(
+      'srs:changsheng_stage:死',
+      _card('changsheng_stage:死', 3, 100),
+      pending: false,
+    );
+    final exported = await SyncEngine.instance.exportDocument();
+    expect(exported['schema_version'], 4);
+
+    SharedPreferences.setMockInitialValues({});
+    await StorageService.initialize();
+    final summary = await SyncEngine.instance.importJson(jsonEncode(exported));
+    expect(summary.applied, 1);
+    expect((await StorageService.loadCard('changsheng_stage:死'))!.reps, 3);
+  });
+
   test('不支持的 schema_version 会被拒绝', () async {
     expect(
       () =>

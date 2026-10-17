@@ -80,8 +80,8 @@ class Questions {
   static Question generateFingerJointReverseQuestion({String? input}) =>
       _one('finger_reverse', input);
 
-  static Question generateChangShengQuestion({String? input}) =>
-      _one('changsheng', input);
+  static Question generateChangShengQuestion() =>
+      KnowledgeCatalog.randomQuestionForModule('shierchangsheng', _rnd);
 
   static Question generateWuXingShengQuestion({String? wuxing}) =>
       _one('wuxing_sheng', wuxing);

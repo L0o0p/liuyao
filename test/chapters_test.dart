@@ -69,6 +69,10 @@ void main() {
     expect(Chapters.forQuestionType('zhi_hour')!.id, 'dizhi');
     expect(Chapters.forQuestionType('zhi_liuchong')!.id, 'xingchonghehai');
     expect(Chapters.forQuestionType('未知题型'), isNull);
+    expect(Chapters.forQuestionType('changsheng_stage')!.id, 'changsheng');
+    expect(Chapters.forQuestionType('changsheng_start')!.id, 'changsheng');
+    expect(Chapters.forQuestionType('changsheng')!.id, 'changsheng');
+    expect(Chapters.byId('changsheng')!.items, hasLength(17));
   });
 
   test('六十四卦章每 16 题休息，其余章节不打断', () {

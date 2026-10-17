@@ -15,7 +15,7 @@ class LocalStore {
   static final LocalStore instance = LocalStore();
 
   static const String schemaVersionKey = 'schema_version';
-  static const int currentSchemaVersion = 3;
+  static const int currentSchemaVersion = 4;
   static const String pendingSyncKey = '_pending_sync_keys';
   static const String syncCursorKey = 'sync_cursor';
 
@@ -125,9 +125,9 @@ class LocalStore {
     await prefs.setInt(syncCursorKey, timestamp);
   }
 
-  /// 把旧进度和错题迁到 srs:{itemKey}。
+  /// 把旧进度和错题迁到 srs:{itemKey}，再把旧十二长生卡并到规则卡上。
   /// 版本 2 之前先把 module_progress_* / wrong_questions 收成 progress: 和 wrong:。
-  /// 成功后再删旧键，并写入 schema_version = 3。
+  /// 成功后再删旧键，并写入 schema_version = 4。
   Future<void> migrateIfNeeded() async {
     final prefs = await _prefs();
     final version = prefs.getInt(schemaVersionKey) ?? 0;
@@ -136,8 +136,128 @@ class LocalStore {
     if (version < 2) {
       await _migrateLegacy(prefs);
     }
-    await _migrateToSrs(prefs);
+    if (version < 3) {
+      await _migrateToSrs(prefs);
+    }
+    await _migrateChangSheng(prefs);
     await prefs.setInt(schemaVersionKey, currentSchemaVersion);
+  }
+
+  /// 旧卡写删除标记并记入待同步，其他设备同步后也会删掉。
+  Future<void> _migrateChangSheng(SharedPreferences prefs) async {
+    final cards = <String, SrsCard>{};
+    for (final key in prefs.getKeys()) {
+      if (!key.startsWith(_changShengSrsPrefix)) continue;
+      final map = _readObject(prefs, key);
+      if (map == null || isDeleted(map)) continue;
+      final itemKey = key.substring(srsPrefix.length);
+      cards[itemKey] = SrsCard.fromJson(map, fallbackItemKey: itemKey);
+    }
+    final merged = mergeLegacyChangSheng(cards);
+    for (final card in merged.ruleCards.values) {
+      await writeRaw('$srsPrefix${card.itemKey}', card.toJson(), pending: true);
+    }
+    for (final itemKey in merged.legacyKeys) {
+      await delete('$srsPrefix$itemKey');
+    }
+  }
+
+  /// 旧版和新版十二长生卡的 srs: 键都以此开头。
+  static const String _changShengSrsPrefix =
+      '$srsPrefix${KnowledgeCatalog.legacyChangShengType}';
+
+  static const String _legacyChangShengPrefix =
+      '${KnowledgeCatalog.legacyChangShengType}:';
+
+  /// 把旧十二长生卡（changsheng:日支_爻支）并到它依赖的两张规则卡上：
+  /// 按日支五行并到起点卡，按推出的阶段并到阶段卡。启动迁移和导入共用。
+  ///
+  /// 同一规则卡收到多张旧卡时取最弱的那张（learning 弱于 review，其次间隔更短、
+  /// 到期更早），lapses、reps 取最大，updatedAt 和 lastReviewedAt 取最晚。
+  /// [cards] 里已有这张规则卡时按 updatedAt 较新者保留，相同时保留已有的。
+  /// 返回要写入的规则卡和要删掉的旧卡键（认不出的旧键也在内）。没有旧卡时都为空。
+  static ({Map<String, SrsCard> ruleCards, Set<String> legacyKeys})
+  mergeLegacyChangSheng(Map<String, SrsCard> cards) {
+    final legacyKeys = <String>{};
+    final grouped = <String, List<SrsCard>>{};
+    for (final entry in cards.entries) {
+      if (!entry.key.startsWith(_legacyChangShengPrefix)) continue;
+      legacyKeys.add(entry.key);
+      final rules = KnowledgeCatalog.legacyChangShengRules(
+        entry.key.substring(_legacyChangShengPrefix.length),
+      );
+      if (rules == null) continue;
+      for (final ruleKey in [rules.startKey, rules.stageKey]) {
+        grouped.putIfAbsent(ruleKey, () => []).add(entry.value);
+      }
+    }
+
+    final ruleCards = <String, SrsCard>{};
+    for (final entry in grouped.entries) {
+      final group = entry.value;
+      var weakest = group.first;
+      var lapses = 0;
+      var reps = 0;
+      var updatedAt = 0;
+      DateTime? lastReviewedAt;
+      for (final card in group) {
+        if (_isWeaker(card, weakest)) weakest = card;
+        if (card.lapses > lapses) lapses = card.lapses;
+        if (card.reps > reps) reps = card.reps;
+        updatedAt = _max(updatedAt, card.updatedAt);
+        final reviewed = card.lastReviewedAt;
+        if (reviewed != null &&
+            (lastReviewedAt == null || reviewed.isAfter(lastReviewedAt))) {
+          lastReviewedAt = reviewed;
+        }
+      }
+      final existing = cards[entry.key];
+      if (existing != null && existing.updatedAt >= updatedAt) continue;
+      ruleCards[entry.key] = SrsCard(
+        itemKey: entry.key,
+        state: weakest.state,
+        dueAt: weakest.dueAt,
+        intervalDays: weakest.intervalDays,
+        ease: weakest.ease,
+        lapses: lapses,
+        reps: reps,
+        correctStreak: weakest.correctStreak,
+        lastReviewedAt: lastReviewedAt,
+        updatedAt: updatedAt,
+      );
+    }
+    return (ruleCards: ruleCards, legacyKeys: legacyKeys);
+  }
+
+  /// 导入用：去掉 srs: 记录里的旧十二长生卡（含删除标记），换成并好的规则卡。
+  static Map<String, Map<String, dynamic>> recordsWithChangShengRules(
+    Map<String, Map<String, dynamic>> records,
+  ) {
+    final cards = <String, SrsCard>{};
+    for (final entry in records.entries) {
+      if (!entry.key.startsWith(_changShengSrsPrefix)) continue;
+      if (isDeleted(entry.value)) continue;
+      final itemKey = entry.key.substring(srsPrefix.length);
+      cards[itemKey] = SrsCard.fromJson(entry.value, fallbackItemKey: itemKey);
+    }
+    final merged = mergeLegacyChangSheng(cards);
+    final result = <String, Map<String, dynamic>>{
+      for (final entry in records.entries)
+        if (!entry.key.startsWith('$srsPrefix$_legacyChangShengPrefix'))
+          entry.key: entry.value,
+    };
+    for (final card in merged.ruleCards.values) {
+      result['$srsPrefix${card.itemKey}'] = card.toJson();
+    }
+    return result;
+  }
+
+  static bool _isWeaker(SrsCard a, SrsCard b) {
+    if (a.state != b.state) return a.state == SrsState.learning;
+    if (a.intervalDays != b.intervalDays) {
+      return a.intervalDays < b.intervalDays;
+    }
+    return a.dueAt.isBefore(b.dueAt);
   }
 
   Future<void> _migrateLegacy(SharedPreferences prefs) async {
@@ -197,7 +317,8 @@ class LocalStore {
     final oldKeys = prefs
         .getKeys()
         .where(
-          (key) => key.startsWith(progressPrefix) || key.startsWith(wrongPrefix),
+          (key) =>
+              key.startsWith(progressPrefix) || key.startsWith(wrongPrefix),
         )
         .toList();
 
@@ -381,14 +502,16 @@ class LocalStore {
     }
   }
 
+  /// 旧十二长生键也算认得，留给后面并到规则卡上。
   static bool _isKnownItemKey(String itemKey) {
     final separator = itemKey.indexOf(':');
     if (separator <= 0 || separator >= itemKey.length - 1) return false;
-    return KnowledgeCatalog.find(
-          itemKey.substring(0, separator),
-          itemKey.substring(separator + 1),
-        ) !=
-        null;
+    final type = itemKey.substring(0, separator);
+    final input = itemKey.substring(separator + 1);
+    if (type == KnowledgeCatalog.legacyChangShengType) {
+      return KnowledgeCatalog.legacyChangShengRules(input) != null;
+    }
+    return KnowledgeCatalog.find(type, input) != null;
   }
 
   static void _keepPreferredCard(Map<String, SrsCard> cards, SrsCard card) {

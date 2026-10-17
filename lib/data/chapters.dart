@@ -45,7 +45,11 @@ class Chapters {
   }
 
   /// 题型所属的章节。目录里的每个题型都恰好属于一章，由单测保证。
+  /// 旧的十二长生题型已不在目录里，仍归到十二长生章。
   static Chapter? forQuestionType(String questionType) {
+    if (questionType == KnowledgeCatalog.legacyChangShengType) {
+      return byId('changsheng');
+    }
     for (final chapter in all) {
       if (chapter.questionTypes.contains(questionType)) return chapter;
     }
@@ -103,7 +107,10 @@ List<Chapter> _buildChapters() {
     Chapter(
       id: 'changsheng',
       atlas: changShengAtlas(),
-      questionTypes: const ['changsheng'],
+      questionTypes: const [
+        KnowledgeCatalog.changShengStageType,
+        KnowledgeCatalog.changShengStartType,
+      ],
     ),
     Chapter(
       id: 'gua64',

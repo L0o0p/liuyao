@@ -11,12 +11,18 @@ class Question {
   /// 旧题表没有这个字段时为空字符串。
   final String input;
 
+  /// 出题时选定、但不进 itemKey 的具体条件。
+  /// 十二长生规则卡用它带上这道题的日支 riZhi 和爻支 yaoZhi，答错讲解按此推算。
+  /// 不写进 JSON，重新出题时会重新抽取。
+  final Map<String, String> context;
+
   Question({
     required this.text,
     required this.options,
     required this.correctAnswer,
     this.questionType = '',
     this.input = '',
+    this.context = const {},
   });
 
   /// 知识点唯一键，例如 `gan_wuxing:甲`。

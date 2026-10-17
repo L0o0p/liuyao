@@ -306,11 +306,12 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
     if (!_prepared) {
       return const Center(child: CircularProgressIndicator());
     }
-    final note = TeachingNotes.forKey(question.itemKey);
+    final note = TeachingNotes.forQuestion(question);
     final chapter = Chapters.forQuestionType(question.questionType);
-    if (_showTeaching && note != null) {
+    final intro = TeachingNotes.forKey(question.itemKey);
+    if (_showTeaching && intro != null) {
       return TeachingCard(
-        note: note,
+        note: intro,
         onContinue: () {
           setState(() {
             _showTeaching = false;

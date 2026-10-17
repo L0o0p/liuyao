@@ -1,3 +1,4 @@
+import '../models/question.dart';
 import 'di_zhi.dart';
 import 'gua_data.dart';
 import 'knowledge_catalog.dart';
@@ -136,8 +137,23 @@ class TeachingNotes {
           fact: '${item.input}克${item.correctAnswer}',
           hint: _cycle(wuXingKe, '克'),
         );
-      case 'changsheng':
-        return _changSheng(item);
+      case KnowledgeCatalog.changShengStageType:
+        final index = changShengCycle.indexOf(item.input);
+        return TeachingNote(
+          title: '十二长生阶段',
+          fact: '${item.correctAnswer}排第${index + 1}',
+          hint:
+              '口诀：${changShengCycle.join('、')}，十二个阶段依次轮转，养之后又回到长生。'
+              '推算时从日支五行的长生起点开始，按地支顺数，每进一支换一个阶段。',
+        );
+      case KnowledgeCatalog.changShengStartType:
+        return TeachingNote(
+          title: '十二长生起点',
+          fact: '${item.input}的长生在${item.correctAnswer}',
+          hint:
+              '口诀：木长生在亥，火长生在寅，金长生在巳，水土长生在申。'
+              '推算时先看日支属什么五行，再从这个起点按地支顺数到爻支。',
+        );
       case 'gua_to_xiang':
         return TeachingNote(
           title: '六十四卦',
@@ -170,20 +186,44 @@ class TeachingNotes {
     return forItem(item);
   }
 
-  static TeachingNote _changSheng(KnowledgeItem item) {
-    final parts = item.input.split('_');
-    final riZhi = parts.isEmpty ? '' : parts.first;
-    final yaoZhi = parts.length < 2 ? '' : parts[1];
-    final element = zhiWuXing[riZhi] ?? '';
-    final start = wuXingChangShengStart[element] ?? '';
-    return TeachingNote(
-      title: '十二长生',
-      fact: '日支$riZhi、爻支$yaoZhi，处于${item.correctAnswer}',
-      hint:
-          '日支$riZhi属$element，$element的长生在$start。'
-          '从$start按地支顺数到$yaoZhi，就是${item.correctAnswer}。'
-          '阶段：${changShengCycle.join('、')}。',
-    );
+  /// 答错讲解。推算题按这道题的日支、爻支分步讲，其余同 [forKey]。
+  static TeachingNote? forQuestion(Question question) {
+    final riZhi = question.context['riZhi'];
+    final yaoZhi = question.context['yaoZhi'];
+    if (KnowledgeCatalog.isChangShengRule(question.questionType) &&
+        riZhi != null &&
+        yaoZhi != null) {
+      final steps = changShengSteps(riZhi, yaoZhi);
+      if (steps.isNotEmpty) {
+        return TeachingNote(
+          title: '十二长生',
+          fact: '日支$riZhi、爻支$yaoZhi，处于${question.correctAnswer}',
+          hint: steps.join(' → '),
+        );
+      }
+    }
+    return forKey(question.itemKey);
+  }
+
+  /// 推算步骤：日支五行 → 长生起点 → 顺数到爻支 → 阶段。
+  /// 例如午日酉爻：日支午属火 → 火长生在寅 → 从寅顺数到酉：寅长生、…、酉死 → 死。
+  static List<String> changShengSteps(String riZhi, String yaoZhi) {
+    final element = zhiWuXing[riZhi];
+    final start = element == null ? null : wuXingChangShengStart[element];
+    final startIndex = start == null ? -1 : diZhiCycle.indexOf(start);
+    final yaoIndex = diZhiCycle.indexOf(yaoZhi);
+    if (startIndex < 0 || yaoIndex < 0) return const [];
+    final count = (yaoIndex - startIndex) % diZhiCycle.length + 1;
+    final walk = [
+      for (var i = 0; i < count; i++)
+        '${diZhiCycle[(startIndex + i) % diZhiCycle.length]}${changShengCycle[i]}',
+    ];
+    return [
+      '日支$riZhi属$element',
+      '$element长生在$start',
+      '从$start顺数到$yaoZhi：${walk.join('、')}',
+      changShengCycle[count - 1],
+    ];
   }
 
   static String _guaHint(String xiang) {

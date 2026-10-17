@@ -18,9 +18,6 @@ enum FirstRoundKind {
   /// 六十四卦：每个卦一题，卦名→卦象与卦象→卦名交错。
   guaAlternating,
 
-  /// 十二长生：按日支和阶段配对覆盖，不是 12×12 全组合。
-  changshengCoverage,
-
   /// 综合练习：混合抽题，同一轮不重复知识点。
   mixed,
 }
@@ -78,6 +75,14 @@ class StudyModule {
 class KnowledgeCatalog {
   KnowledgeCatalog._();
 
+  /// 十二长生的复习卡挂在规则上：阶段顺序 12 条，五行长生起点 5 条。
+  /// 出题仍考推算，每次另抽一组依赖这条规则的日支和爻支。
+  static const String changShengStageType = 'changsheng_stage';
+  static const String changShengStartType = 'changsheng_start';
+
+  /// 旧版本按「日支_爻支」记的十二长生卡，只在迁移和兼容旧记录时出现。
+  static const String legacyChangShengType = 'changsheng';
+
   static const Map<String, String> questionTypeLabels = {
     'gan_wuxing': '天干五行',
     'zhi_wuxing': '地支五行',
@@ -103,7 +108,8 @@ class KnowledgeCatalog {
     'finger_reverse': '指诀反查',
     'wuxing_sheng': '五行相生',
     'wuxing_ke': '五行相克',
-    'changsheng': '十二长生',
+    changShengStageType: '十二长生阶段',
+    changShengStartType: '十二长生起点',
     'gua_to_xiang': '六十四卦',
     'xiang_to_gua': '六十四卦',
   };
@@ -174,7 +180,13 @@ class KnowledgeCatalog {
     return pool[random.nextInt(pool.length)].input;
   }
 
-  /// 给定题型和输入，正确答案与 itemKey 固定；错误选项和顺序随 [random] 变化。
+  static bool isChangShengRule(String questionType) =>
+      questionType == changShengStageType ||
+      questionType == changShengStartType;
+
+  /// 给定题型和输入，itemKey 固定；错误选项和顺序随 [random] 变化。
+  /// 普通知识点的正确答案也固定。十二长生规则卡多数时候出推算题，
+  /// 日支、爻支随 [random] 抽取，正确答案是推出来的阶段；其余时候直接问规则。
   static Question generateQuestion(
     String questionType,
     String input, {
@@ -185,22 +197,96 @@ class KnowledgeCatalog {
       throw Exception('Unknown question: $questionType:$input');
     }
     final rng = random ?? Random();
-    final pool = List<String>.of(item.distractors)..shuffle(rng);
+    if (isChangShengRule(questionType) && rng.nextInt(4) != 0) {
+      final String riZhi;
+      final String yaoZhi;
+      if (questionType == changShengStartType) {
+        final candidates = diZhiCycle
+            .where((zhi) => zhiWuXing[zhi] == input)
+            .toList();
+        riZhi = candidates[rng.nextInt(candidates.length)];
+        yaoZhi = diZhiCycle[rng.nextInt(diZhiCycle.length)];
+      } else {
+        riZhi = diZhiCycle[rng.nextInt(diZhiCycle.length)];
+        final start = wuXingChangShengStart[zhiWuXing[riZhi]]!;
+        final offset =
+            diZhiCycle.indexOf(start) + changShengCycle.indexOf(input);
+        yaoZhi = diZhiCycle[offset % diZhiCycle.length];
+      }
+      return changShengQuestion(
+        riZhi: riZhi,
+        yaoZhi: yaoZhi,
+        ruleType: questionType,
+        random: rng,
+      );
+    }
+    return Question(
+      text: item.text,
+      options: _options(item.correctAnswer, item.distractors, rng),
+      correctAnswer: item.correctAnswer,
+      questionType: item.questionType,
+      input: item.input,
+    );
+  }
+
+  /// 十二长生推算题。[ruleType] 决定记到哪张规则卡：
+  /// 起点卡按日支五行，阶段卡按推出的阶段。
+  static Question changShengQuestion({
+    required String riZhi,
+    required String yaoZhi,
+    required String ruleType,
+    Random? random,
+  }) {
+    final stage = getWuXingChangSheng(riZhi, yaoZhi);
+    final element = zhiWuXing[riZhi];
+    if (!isChangShengRule(ruleType) ||
+        element == null ||
+        !changShengCycle.contains(stage)) {
+      throw ArgumentError('无法推算十二长生: $ruleType $riZhi $yaoZhi');
+    }
+    return Question(
+      text: '日支$riZhi、爻支$yaoZhi，处于十二长生的哪个阶段？',
+      options: _options(
+        stage,
+        _without(changShengCycle, stage),
+        random ?? Random(),
+      ),
+      correctAnswer: stage,
+      questionType: ruleType,
+      input: ruleType == changShengStartType ? element : stage,
+      context: {'riZhi': riZhi, 'yaoZhi': yaoZhi},
+    );
+  }
+
+  /// 旧十二长生键的输入「日支_爻支」依赖的两张规则卡。认不出时返回 null。
+  static ({String startKey, String stageKey})? legacyChangShengRules(
+    String input,
+  ) {
+    final parts = input.split('_');
+    if (parts.length != 2) return null;
+    final element = zhiWuXing[parts[0]];
+    final stage = getWuXingChangSheng(parts[0], parts[1]);
+    if (element == null || !changShengCycle.contains(stage)) return null;
+    return (
+      startKey: '$changShengStartType:$element',
+      stageKey: '$changShengStageType:$stage',
+    );
+  }
+
+  static List<String> _options(
+    String correct,
+    List<String> distractors,
+    Random rng,
+  ) {
+    final pool = List<String>.of(distractors)..shuffle(rng);
     final wrong = <String>[];
-    final seen = <String>{item.correctAnswer};
+    final seen = <String>{correct};
     for (final candidate in pool) {
       if (!seen.add(candidate)) continue;
       wrong.add(candidate);
       if (wrong.length == 3) break;
     }
-    final options = <String>[item.correctAnswer, ...wrong]..shuffle(rng);
-    return Question(
-      text: item.text,
-      options: options,
-      correctAnswer: item.correctAnswer,
-      questionType: item.questionType,
-      input: item.input,
-    );
+    return <String>[correct, ...wrong]..shuffle(rng);
   }
 
   static Question randomQuestionOfType(String questionType, Random random) {
@@ -518,19 +604,32 @@ List<KnowledgeItem> _buildItems() {
     );
   }
 
-  for (final riZhi in diZhiCycle) {
-    for (final yaoZhi in diZhiCycle) {
-      final correct = getWuXingChangSheng(riZhi, yaoZhi);
-      add(
-        KnowledgeItem(
-          questionType: 'changsheng',
-          input: '${riZhi}_$yaoZhi',
-          correctAnswer: correct,
-          text: '若日支为『$riZhi』，某爻地支为『$yaoZhi』，此爻处于十二长生的哪一阶段？',
-          distractors: _without(changShengCycle, correct),
-        ),
-      );
-    }
+  // 这里的题干和答案是直接问规则的那种题，推算题在出题时另行生成。
+  for (var i = 0; i < changShengCycle.length; i++) {
+    final stage = changShengCycle[i];
+    final previous =
+        changShengCycle[(i - 1 + changShengCycle.length) %
+            changShengCycle.length];
+    add(
+      KnowledgeItem(
+        questionType: KnowledgeCatalog.changShengStageType,
+        input: stage,
+        correctAnswer: stage,
+        text: '十二长生里，「$previous」之后是哪个阶段？',
+        distractors: _without(changShengCycle, stage),
+      ),
+    );
+  }
+  for (final entry in wuXingChangShengStart.entries) {
+    add(
+      KnowledgeItem(
+        questionType: KnowledgeCatalog.changShengStartType,
+        input: entry.key,
+        correctAnswer: entry.value,
+        text: '${entry.key}的长生在哪个地支？',
+        distractors: _without(diZhiCycle, entry.value),
+      ),
+    );
   }
 
   final guaNames = getAllGuaNames();
@@ -664,8 +763,11 @@ List<StudyModule> _buildModules() {
       subtitle: '用来判断某个爻（事物）的旺衰强弱',
       icon: Icons.timeline,
       color: Colors.deepOrange,
-      questionTypes: ['changsheng'],
-      firstRound: FirstRoundKind.changshengCoverage,
+      questionTypes: [
+        KnowledgeCatalog.changShengStageType,
+        KnowledgeCatalog.changShengStartType,
+      ],
+      firstRound: FirstRoundKind.eachItem,
     ),
     StudyModule(
       id: '64gua',

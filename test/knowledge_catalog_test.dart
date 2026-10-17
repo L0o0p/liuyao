@@ -2,10 +2,13 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liuyao/data/knowledge_catalog.dart';
+import 'package:liuyao/data/teaching_notes.dart';
+import 'package:liuyao/data/zhi_relations.dart';
 import 'package:liuyao/models/question.dart';
 import 'package:liuyao/models/wrong_question_record.dart';
 import 'package:liuyao/services/question_reconstructor.dart';
 import 'package:liuyao/services/questions.dart';
+import 'package:liuyao/services/rule_functions.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +43,8 @@ void main() {
       'finger_reverse',
       'wuxing_sheng',
       'wuxing_ke',
-      'changsheng',
+      'changsheng_stage',
+      'changsheng_start',
       'gua_to_xiang',
       'xiang_to_gua',
     ];
@@ -56,6 +60,7 @@ void main() {
 
   test('同一知识点多次生成时正确答案和键不变，选项含正确答案且不重复', () {
     for (final item in KnowledgeCatalog.items) {
+      if (KnowledgeCatalog.isChangShengRule(item.questionType)) continue;
       final first = KnowledgeCatalog.generateQuestion(
         item.questionType,
         item.input,
@@ -126,18 +131,114 @@ void main() {
     expect(ganTime.itemKey, 'gan_time:甲');
   });
 
-  test('十二长生键仍是日支_爻支，六冲可以按键出题', () {
-    final changSheng = KnowledgeCatalog.generateQuestion(
-      'changsheng',
-      '子_亥',
-      random: Random(3),
+  test('十二长生只有 17 张规则卡：12 个阶段和 5 个五行起点', () {
+    final stages = KnowledgeCatalog.itemsForTypes(['changsheng_stage']);
+    final starts = KnowledgeCatalog.itemsForTypes(['changsheng_start']);
+    expect(
+      stages.map((item) => item.input).join(' '),
+      '长生 沐浴 冠带 临官 帝旺 衰 病 死 墓 绝 胎 养',
     );
-    expect(changSheng.questionType, 'changsheng');
-    expect(changSheng.input, '子_亥');
-    expect(changSheng.itemKey, 'changsheng:子_亥');
-    expect(changSheng.text, contains('日支为『子』'));
-    expect(changSheng.text, contains('爻地支为『亥』'));
+    expect(
+      {for (final item in starts) item.input: item.correctAnswer},
+      {'木': '亥', '火': '寅', '金': '巳', '水': '申', '土': '申'},
+    );
+    expect(
+      KnowledgeCatalog.itemsForModule('shierchangsheng').map((e) => e.itemKey),
+      [...stages, ...starts].map((e) => e.itemKey),
+    );
+    expect(KnowledgeCatalog.find('changsheng', '午_酉'), isNull);
+  });
 
+  test('午日酉爻：午属火，火长生在寅，从寅顺数到酉是死', () {
+    final question = KnowledgeCatalog.changShengQuestion(
+      riZhi: '午',
+      yaoZhi: '酉',
+      ruleType: 'changsheng_start',
+      random: Random(1),
+    );
+    expect(question.text, '日支午、爻支酉，处于十二长生的哪个阶段？');
+    expect(question.correctAnswer, '死');
+    expect(question.itemKey, 'changsheng_start:火');
+    expect(question.context, {'riZhi': '午', 'yaoZhi': '酉'});
+    expect(question.options, hasLength(4));
+    expect(question.options, contains('死'));
+
+    final byStage = KnowledgeCatalog.changShengQuestion(
+      riZhi: '午',
+      yaoZhi: '酉',
+      ruleType: 'changsheng_stage',
+    );
+    expect(byStage.itemKey, 'changsheng_stage:死');
+
+    expect(TeachingNotes.changShengSteps('午', '酉'), [
+      '日支午属火',
+      '火长生在寅',
+      '从寅顺数到酉：寅长生、卯沐浴、辰冠带、巳临官、午帝旺、未衰、申病、酉死',
+      '死',
+    ]);
+    final note = TeachingNotes.forQuestion(question)!;
+    expect(note.hint, startsWith('日支午属火 → 火长生在寅 → 从寅顺数到酉'));
+    expect(note.hint, endsWith('→ 死'));
+
+    // 土随水，长生在申。
+    expect(KnowledgeCatalog.legacyChangShengRules('辰_申'), (
+      startKey: 'changsheng_start:土',
+      stageKey: 'changsheng_stage:长生',
+    ));
+    expect(KnowledgeCatalog.legacyChangShengRules('午'), isNull);
+  });
+
+  test('规则卡出题依赖这条规则，固定种子可复现，itemKey 始终是规则卡', () {
+    var direct = 0;
+    for (final item in KnowledgeCatalog.itemsForTypes([
+      'changsheng_stage',
+      'changsheng_start',
+    ])) {
+      for (var seed = 0; seed < 40; seed++) {
+        final question = KnowledgeCatalog.generateQuestion(
+          item.questionType,
+          item.input,
+          random: Random(seed),
+        );
+        final again = KnowledgeCatalog.generateQuestion(
+          item.questionType,
+          item.input,
+          random: Random(seed),
+        );
+        expect(again.text, question.text);
+        expect(again.options, question.options);
+        expect(question.itemKey, item.itemKey);
+        expect(question.options, contains(question.correctAnswer));
+        expect(question.options.toSet(), hasLength(4));
+
+        final riZhi = question.context['riZhi'];
+        final yaoZhi = question.context['yaoZhi'];
+        if (riZhi == null || yaoZhi == null) {
+          direct++;
+          expect(question.text, item.text);
+          expect(question.correctAnswer, item.correctAnswer);
+          continue;
+        }
+        expect(question.text, '日支$riZhi、爻支$yaoZhi，处于十二长生的哪个阶段？');
+        expect(question.correctAnswer, getWuXingChangSheng(riZhi, yaoZhi));
+        expect(changShengCycle, containsAll(question.options));
+        final rules = KnowledgeCatalog.legacyChangShengRules(
+          '${riZhi}_$yaoZhi',
+        )!;
+        expect(
+          item.questionType == 'changsheng_start'
+              ? rules.startKey
+              : rules.stageKey,
+          item.itemKey,
+        );
+      }
+    }
+    // 推算题为主，偶尔直接问规则。
+    expect(direct, greaterThan(0));
+    expect(direct, lessThan(17 * 40 / 2));
+  });
+
+  test('六冲可以按键出题', () {
     final chong = KnowledgeCatalog.generateQuestion('zhi_liuchong', '子');
     expect(chong.correctAnswer, '午');
     expect(chong.itemKey, 'zhi_liuchong:子');
@@ -170,5 +271,37 @@ void main() {
       Question(text: '卦「讼」的卦象是哪个？', options: ['天水', '天天'], correctAnswer: '天水'),
     );
     expect(fromStem, {'questionType': 'gua_to_xiang', 'input': '讼'});
+  });
+
+  test('旧十二长生题干和错题记录映射到日支五行的起点卡', () {
+    final legacyStem = QuestionReconstructor.inferQuestionTypeAndInput(
+      Question(
+        text: '若日支为『午』，某爻地支为『酉』，此爻处于十二长生的哪一阶段？',
+        options: ['死', '病'],
+        correctAnswer: '死',
+      ),
+    );
+    expect(legacyStem, {'questionType': 'changsheng_start', 'input': '火'});
+
+    final currentStem = QuestionReconstructor.inferQuestionTypeAndInput(
+      Question(
+        text: '日支辰、爻支申，处于十二长生的哪个阶段？',
+        options: ['长生', '沐浴'],
+        correctAnswer: '长生',
+      ),
+    );
+    expect(currentStem, {'questionType': 'changsheng_start', 'input': '土'});
+
+    final rebuilt = QuestionReconstructor.reconstructFromRecord(
+      WrongQuestionRecord(
+        questionType: 'changsheng',
+        input: '午_酉',
+        correctAnswer: '死',
+        userAnswer: '病',
+      ),
+    );
+    expect(rebuilt.itemKey, 'changsheng_start:火');
+    expect(rebuilt.correctAnswer, '死');
+    expect(rebuilt.text, contains('日支午、爻支酉'));
   });
 }

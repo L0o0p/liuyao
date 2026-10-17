@@ -1,6 +1,7 @@
 import '../data/di_zhi.dart';
 import '../data/knowledge_catalog.dart';
 import '../data/tian_gan.dart';
+import '../data/zhi_relations.dart';
 import '../models/question.dart';
 import '../models/wrong_question_record.dart';
 
@@ -12,6 +13,16 @@ class QuestionReconstructor {
   static final _wuxing = ["木", "火", "土", "金", "水"];
 
   static Question reconstructFromRecord(WrongQuestionRecord record) {
+    if (record.questionType == KnowledgeCatalog.legacyChangShengType) {
+      final parts = record.input.split('_');
+      if (KnowledgeCatalog.legacyChangShengRules(record.input) != null) {
+        return KnowledgeCatalog.changShengQuestion(
+          riZhi: parts[0],
+          yaoZhi: parts[1],
+          ruleType: KnowledgeCatalog.changShengStartType,
+        );
+      }
+    }
     final question = KnowledgeCatalog.generateQuestion(
       record.questionType,
       record.input,
@@ -169,6 +180,22 @@ class QuestionReconstructor {
       final match = RegExp(r'卦象「(.+)」对应的卦名是哪个？').firstMatch(text);
       if (match != null) {
         return {'questionType': 'xiang_to_gua', 'input': match.group(1)!};
+      }
+    }
+
+    // 旧题干「若日支为『午』，某爻地支为『酉』」和现在的推算题干，都归到日支五行的起点卡。
+    if (text.contains('十二长生')) {
+      final match = RegExp(
+        r'日支(?:为『)?(.)』?[，、](?:某爻地支为『|爻支)(.)',
+      ).firstMatch(text);
+      final riZhi = match?.group(1);
+      final yaoZhi = match?.group(2);
+      if (riZhi != null &&
+          KnowledgeCatalog.legacyChangShengRules('${riZhi}_$yaoZhi') != null) {
+        return {
+          'questionType': KnowledgeCatalog.changShengStartType,
+          'input': zhiWuXing[riZhi]!,
+        };
       }
     }
 

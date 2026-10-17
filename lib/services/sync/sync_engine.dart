@@ -87,7 +87,8 @@ class SyncEngine {
   }
 
   /// 校验导出文件，再按合并规则写入。不会覆盖本地较新的数据。
-  /// 版本 2 的备份（进度和错题）先按启动迁移的规则转成复习卡片。
+  /// 版本 2 的备份（进度和错题）先按启动迁移的规则转成复习卡片；
+  /// 版本 2、3 里按日支_爻支记的十二长生卡再并到规则卡上。
   Future<ImportResult> importJson(String raw) async {
     final decoded = jsonDecode(raw);
     if (decoded is! Map) {
@@ -95,7 +96,7 @@ class SyncEngine {
     }
     final document = Map<String, dynamic>.from(decoded);
     final version = document['schema_version'];
-    if (version != 2 && version != LocalStore.currentSchemaVersion) {
+    if (version != 2 && version != 3 && version != 4) {
       throw FormatException('不支持的学习数据版本：$version');
     }
     final itemsRaw = document['items'];
@@ -112,22 +113,22 @@ class SyncEngine {
       items[key] = Map<String, dynamic>.from(entry.value as Map);
     }
 
-    final incoming = <String, Map<String, dynamic>>{};
+    final records = <String, Map<String, dynamic>>{};
     if (version == 2) {
       final cards = LocalStore.cardsFromVersion2(items, DateTime.now());
       for (final card in cards.values) {
-        incoming['${LocalStore.srsPrefix}${card.itemKey}'] = card.toJson();
+        records['${LocalStore.srsPrefix}${card.itemKey}'] = card.toJson();
       }
     } else {
       for (final entry in items.entries) {
         if (!entry.key.startsWith(LocalStore.srsPrefix)) continue;
         final value = entry.value;
         value['updatedAt'] = LocalStore.updatedAtOf(value);
-        incoming[entry.key] = value;
+        records[entry.key] = value;
       }
     }
 
-    return _applyIncoming(incoming);
+    return _applyIncoming(LocalStore.recordsWithChangShengRules(records));
   }
 
   Future<void> _sync() async {
