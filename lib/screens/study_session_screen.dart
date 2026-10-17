@@ -47,6 +47,9 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
   Future<void>? _ready;
   Future<void>? _pendingGrade;
 
+  /// 当前这道题作答前在查表页停留的总时长，评分时从答题用时里扣掉。
+  Duration _lookupTime = Duration.zero;
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +95,7 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
     if (_index < 0 || _index >= _questions.length) return;
     _prepared = false;
     _showTeaching = false;
+    _lookupTime = Duration.zero;
     _ready = _prepareCurrent();
   }
 
@@ -129,10 +133,11 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
       correct: correct,
       missedInSession: missedInSession,
     );
+    final thinking = elapsed - _lookupTime;
     final updated = SrsScheduler.grade(
       card: current,
       correct: correct,
-      elapsed: elapsed,
+      elapsed: thinking.isNegative ? Duration.zero : thinking,
       now: now,
       missedInSession: missedInSession,
     );
@@ -232,12 +237,18 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
   }
 
   /// 压栈打开，不动本页状态，返回时还在原题。
-  void _openTables(Chapter chapter) {
-    Navigator.of(context).push(
+  Future<void> _openTables(Chapter chapter) async {
+    final countsTowardAnswer = !_showTeaching;
+    final index = _index;
+    final openedAt = DateTime.now();
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ChapterTablesScreen(chapter: chapter),
       ),
     );
+    if (countsTowardAnswer && index == _index) {
+      _lookupTime += DateTime.now().difference(openedAt);
+    }
   }
 
   @override
