@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/chapters.dart';
 import '../data/knowledge_catalog.dart';
+import '../data/study_groups.dart';
 import '../data/teaching_notes.dart';
 import '../models/question.dart';
 import '../models/srs_card.dart';
@@ -11,6 +12,7 @@ import '../services/srs_scheduler.dart';
 import '../services/storage_service.dart';
 import '../services/sync/sync_engine.dart';
 import '../widgets/flip_card.dart';
+import '../widgets/group_intro_card.dart';
 import '../widgets/teaching_card.dart';
 import 'chapter_tables_screen.dart';
 
@@ -23,11 +25,16 @@ class StudySessionScreen extends StatefulWidget {
   /// 每答完这么多题提示休息。只影响界面，不写进度。
   final int? restEvery;
 
+  /// 本次引入的新组。练到这组第一个知识点前先看小组引入页，
+  /// 组内知识点不再逐条显示教学卡。
+  final StudyGroup? group;
+
   const StudySessionScreen({
     super.key,
     required this.title,
     required this.loadItemKeys,
     this.restEvery,
+    this.group,
   });
 
   @override
@@ -43,6 +50,8 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
   bool _loading = true;
   bool _prepared = false;
   bool _showTeaching = false;
+  bool _showGroupIntro = false;
+  bool _groupIntroSeen = false;
   String? _error;
   Future<void>? _ready;
   Future<void>? _pendingGrade;
@@ -95,6 +104,7 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
     if (_index < 0 || _index >= _questions.length) return;
     _prepared = false;
     _showTeaching = false;
+    _showGroupIntro = false;
     _lookupTime = Duration.zero;
     _ready = _prepareCurrent();
   }
@@ -113,9 +123,11 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
     }
     if (!mounted || _questions[_index].itemKey != key) return;
     final card = _cards[key]!;
+    final inGroup = widget.group?.itemKeys.contains(key) ?? false;
     setState(() {
       _prepared = true;
-      _showTeaching = card.reps == 0 && card.lastReviewedAt == null;
+      _showGroupIntro = inGroup && !_groupIntroSeen;
+      _showTeaching = !inGroup && card.reps == 0 && card.lastReviewedAt == null;
     });
   }
 
@@ -238,7 +250,7 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
 
   /// 压栈打开，不动本页状态，返回时还在原题。
   Future<void> _openTables(Chapter chapter) async {
-    final countsTowardAnswer = !_showTeaching;
+    final countsTowardAnswer = !_showTeaching && !_showGroupIntro;
     final index = _index;
     final openedAt = DateTime.now();
     await Navigator.of(context).push(
@@ -305,6 +317,18 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
     final question = _questions[_index];
     if (!_prepared) {
       return const Center(child: CircularProgressIndicator());
+    }
+    final group = widget.group;
+    if (_showGroupIntro && group != null) {
+      return GroupIntroCard(
+        group: group,
+        onContinue: () {
+          setState(() {
+            _showGroupIntro = false;
+            _groupIntroSeen = true;
+          });
+        },
+      );
     }
     final note = TeachingNotes.forQuestion(question);
     final chapter = Chapters.forQuestionType(question.questionType);

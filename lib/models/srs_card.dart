@@ -7,7 +7,6 @@ class SrsLimits {
   static const double initialEase = 2.5;
   static const double maxIntervalDays = 180;
   static const double masteredIntervalDays = 21;
-  static const int dailyNewLimit = 5;
   static const Duration fastThreshold = Duration(seconds: 8);
   static const Duration lapseDelay = Duration(minutes: 10);
 }

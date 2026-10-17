@@ -68,7 +68,7 @@ class LocalStore {
     await _write(key, stored, pending: pending);
   }
 
-  /// 写入不参与同步的本地 JSON，例如当天新学计数。
+  /// 写入不参与同步的本地 JSON，例如当天引入过的小组。
   Future<void> writePlain(String key, Map<String, dynamic> value) async {
     final prefs = await _prefs();
     await prefs.setString(key, jsonEncode(value));

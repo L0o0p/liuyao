@@ -3,7 +3,8 @@ import '../models/srs_card.dart';
 import 'local_store.dart';
 
 /// 复习卡片存在 LocalStore 的 `srs:{itemKey}` 上。
-/// 当天新学计数单独放在 [LocalStore.srsDailyKey]，不进同步集合。
+/// 当天引入过哪些小组单独放在 [LocalStore.srsDailyKey]，不进同步集合，也不导出：
+/// 它只决定今天还要不要自动引入新组，换机后丢了最多让当天多引入一组。
 class StorageService {
   static Future<void> initialize() async {
     await LocalStore.instance.migrateIfNeeded();
@@ -82,24 +83,21 @@ class StorageService {
     return '$year-$month-$day';
   }
 
-  static Future<int> introducedOn(DateTime now) async {
+  /// 当天已经引入过的小组 id。旧版本存的是条数，没有 groups 字段，按没引入过算。
+  static Future<List<String>> groupsIntroducedOn(DateTime now) async {
     final data = await LocalStore.instance.get(LocalStore.srsDailyKey);
-    if (data == null || data['date'] != dayStamp(now)) return 0;
-    final raw = data['introduced'];
-    if (raw is int) return raw < 0 ? 0 : raw;
-    if (raw is num) {
-      final value = raw.toInt();
-      return value < 0 ? 0 : value;
-    }
-    return 0;
+    if (data == null || data['date'] != dayStamp(now)) return const [];
+    final raw = data['groups'];
+    if (raw is! List) return const [];
+    return raw.whereType<String>().toList();
   }
 
-  static Future<void> addIntroduced(DateTime now, int count) async {
-    if (count <= 0) return;
-    final current = await introducedOn(now);
+  static Future<void> markGroupIntroduced(DateTime now, String groupId) async {
+    final current = await groupsIntroducedOn(now);
+    if (current.contains(groupId)) return;
     await LocalStore.instance.writePlain(LocalStore.srsDailyKey, {
       'date': dayStamp(now),
-      'introduced': current + count,
+      'groups': [...current, groupId],
     });
   }
 }

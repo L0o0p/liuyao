@@ -315,13 +315,40 @@ void main() {
     expect(LocalStore.updatedAtOf(tombstone!), greaterThan(0));
   });
 
-  test('每日新学计数跨天清零', () async {
+  test('当天引入过的小组跨天清零，旧版的条数记录按没引入过算，且不进同步', () async {
+    SharedPreferences.setMockInitialValues({
+      'srs_daily': jsonEncode({'date': '2026-10-15', 'introduced': 5}),
+    });
     await StorageService.initialize();
-    final firstDay = DateTime(2026, 10, 15, 8);
-    await StorageService.addIntroduced(firstDay, 2);
-    await StorageService.addIntroduced(DateTime(2026, 10, 15, 21), 3);
-    expect(await StorageService.introducedOn(DateTime(2026, 10, 15, 23)), 5);
-    expect(await StorageService.introducedOn(DateTime(2026, 10, 16, 0, 30)), 0);
+    expect(
+      await StorageService.groupsIntroducedOn(DateTime(2026, 10, 15, 9)),
+      isEmpty,
+    );
+
+    await StorageService.markGroupIntroduced(
+      DateTime(2026, 10, 15, 8),
+      'wuxing_sheng',
+    );
+    await StorageService.markGroupIntroduced(
+      DateTime(2026, 10, 15, 21),
+      'wuxing_ke',
+    );
+    await StorageService.markGroupIntroduced(
+      DateTime(2026, 10, 15, 22),
+      'wuxing_ke',
+    );
+    expect(
+      await StorageService.groupsIntroducedOn(DateTime(2026, 10, 15, 23)),
+      ['wuxing_sheng', 'wuxing_ke'],
+    );
+    expect(
+      await StorageService.groupsIntroducedOn(DateTime(2026, 10, 16, 0, 30)),
+      isEmpty,
+    );
+    expect(
+      (await LocalStore.instance.pendingValues()).containsKey('srs_daily'),
+      isFalse,
+    );
   });
 }
 

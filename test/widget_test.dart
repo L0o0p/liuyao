@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liuyao/data/study_groups.dart';
 import 'package:liuyao/main.dart';
+import 'package:liuyao/models/srs_card.dart';
 import 'package:liuyao/screens/chapter_detail_screen.dart';
 import 'package:liuyao/screens/study_session_screen.dart';
+import 'package:liuyao/services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -26,6 +31,60 @@ void main() {
     expect(find.text('学习'), findsNothing);
     expect(find.text('图鉴'), findsNothing);
     expect(find.text('进度'), findsNothing);
+  });
+
+  testWidgets('今日页显示今天的小组，开始后先看小组引入页，再逐条做选择题', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const MyApp());
+    await settle(tester);
+
+    expect(find.text('今天新学：五行相生（5 条）'), findsOneWidget);
+    await tester.tap(find.text('开始'));
+    await settle(tester);
+    await settle(tester);
+
+    expect(find.text('今日新学'), findsOneWidget);
+    expect(find.text('五行相生'), findsOneWidget);
+    expect(find.text('木生火，火生土，土生金，金生水，水生木。'), findsOneWidget);
+    expect(find.text('记住了，开始答题'), findsNothing);
+
+    await tester.tap(find.text('开始逐条练习'));
+    await settle(tester);
+
+    expect(find.textContaining('所生的是什么五行？'), findsOneWidget);
+    expect(find.byType(ElevatedButton), findsNWidgets(4));
+    expect(find.text('记住了，开始答题'), findsNothing);
+  });
+
+  testWidgets('今天的小组引入过后不再自动引入，可以再学一组', (WidgetTester tester) async {
+    final now = DateTime.now();
+    SharedPreferences.setMockInitialValues({
+      'srs_daily': jsonEncode({
+        'date': StorageService.dayStamp(now),
+        'groups': ['wuxing_sheng'],
+      }),
+      for (final key in StudyGroups.byId('wuxing_sheng')!.itemKeys)
+        'srs:$key': jsonEncode(
+          SrsCard(
+            itemKey: key,
+            state: SrsState.review,
+            dueAt: now.add(const Duration(days: 1)),
+            intervalDays: 1,
+            updatedAt: 1,
+          ).toJson(),
+        ),
+    });
+    await tester.pumpWidget(const MyApp());
+    await settle(tester);
+
+    expect(find.text('今天已经学完'), findsOneWidget);
+    expect(find.text('今天的新组已经学过'), findsOneWidget);
+    await tester.tap(find.text('再学一组：五行相克（5 条）'));
+    await settle(tester);
+    await settle(tester);
+
+    expect(find.text('五行相克'), findsOneWidget);
+    expect(find.text('开始逐条练习'), findsOneWidget);
   });
 
   testWidgets('章节按学习顺序列出，点进去能看到对照表和练习入口', (WidgetTester tester) async {

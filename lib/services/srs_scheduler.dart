@@ -120,38 +120,38 @@ class SrsScheduler {
 
   static bool isMastered(SrsCard card) => card.isMastered;
 
-  /// 先放到期卡，再按目录顺序补新卡。新卡数量受当日剩余额度限制。
+  /// 先放到期卡，再放今天要引入的那组里还没有卡片的知识点。
+  /// 不引入新组时 [groupKeys] 为空。
   static TodayPlan planToday({
     required List<String> catalogOrder,
     required Map<String, SrsCard> cards,
-    required int introducedToday,
     required DateTime now,
-    int dailyLimit = SrsLimits.dailyNewLimit,
+    List<String> groupKeys = const [],
   }) {
     final order = <String, int>{
       for (var i = 0; i < catalogOrder.length; i++) catalogOrder[i]: i,
     };
     final due = <String>[];
-    final unseen = <String>[];
     for (final key in catalogOrder) {
       final card = cards[key];
-      if (card == null) {
-        unseen.add(key);
-        continue;
-      }
-      if (isDue(card, now)) due.add(key);
+      if (card != null && isDue(card, now)) due.add(key);
     }
     due.sort((a, b) {
       final byTime = cards[a]!.dueAt.compareTo(cards[b]!.dueAt);
       if (byTime != 0) return byTime;
       return order[a]!.compareTo(order[b]!);
     });
-    final remaining = (dailyLimit - introducedToday).clamp(0, dailyLimit).toInt();
-    return TodayPlan(dueKeys: due, newKeys: unseen.take(remaining).toList());
+    return TodayPlan(
+      dueKeys: due,
+      newKeys: [
+        for (final key in groupKeys)
+          if (!cards.containsKey(key)) key,
+      ],
+    );
   }
 
   /// 到期或学习中的在前，其余已有卡片按离到期从近到远，没学过的按目录顺序垫后。
-  /// 不看每日新学上限。
+  /// 不受今日小组引入的约束。
   static List<String> moduleQueue({
     required List<String> moduleItemKeys,
     required Map<String, SrsCard> cards,

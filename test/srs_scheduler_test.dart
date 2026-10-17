@@ -289,7 +289,7 @@ void main() {
     expect(slowCapped.state, SrsState.review);
   });
 
-  test('今日队列先到期再新学，且新学不超过 5', () {
+  test('今日队列先到期再新学，新学只取今天这组里还没有卡片的', () {
     final catalog = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     final cards = {
       'b': reviewCard('b', now.subtract(const Duration(days: 1)), 2),
@@ -306,33 +306,23 @@ void main() {
     final plan = SrsScheduler.planToday(
       catalogOrder: catalog,
       cards: cards,
-      introducedToday: 0,
       now: now,
+      groupKeys: ['e', 'f', 'g'],
     );
     expect(plan.dueKeys, ['b', 'c']);
-    expect(plan.newKeys, ['a', 'e', 'g', 'h']);
-    expect(plan.itemKeys, ['b', 'c', 'a', 'e', 'g', 'h']);
-    expect(plan.newCount, lessThanOrEqualTo(5));
+    expect(plan.newKeys, ['e', 'g']);
+    expect(plan.itemKeys, ['b', 'c', 'e', 'g']);
+    expect(plan.itemKeys.contains('a'), isFalse);
     expect(plan.itemKeys.contains('d'), isFalse);
     expect(plan.itemKeys.contains('f'), isFalse);
 
-    final limited = SrsScheduler.planToday(
+    final noGroup = SrsScheduler.planToday(
       catalogOrder: catalog,
       cards: cards,
-      introducedToday: 4,
       now: now,
     );
-    expect(limited.newKeys, ['a']);
-    expect(limited.itemKeys.first, 'b');
-
-    final full = SrsScheduler.planToday(
-      catalogOrder: catalog,
-      cards: cards,
-      introducedToday: 5,
-      now: now,
-    );
-    expect(full.newKeys, isEmpty);
-    expect(full.itemKeys, ['b', 'c']);
+    expect(noGroup.newKeys, isEmpty);
+    expect(noGroup.itemKeys, ['b', 'c']);
   });
 
   test('模块队列只含该模块，到期和学习中的在前', () {

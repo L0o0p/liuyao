@@ -117,13 +117,13 @@ class TeachingNotes {
         return TeachingNote(
           title: '十二支指诀',
           fact: '${item.input}在${item.correctAnswer}',
-          hint: '每个地支固定在一个指节上。完整对照可以在图鉴里查。',
+          hint: '每个地支固定在一个指节上。完整对照可以点「查表」看。',
         );
       case 'finger_reverse':
         return TeachingNote(
           title: '十二支指诀',
           fact: '${item.input}是${item.correctAnswer}',
-          hint: '每个地支固定在一个指节上。完整对照可以在图鉴里查。',
+          hint: '每个地支固定在一个指节上。完整对照可以点「查表」看。',
         );
       case 'wuxing_sheng':
         return TeachingNote(

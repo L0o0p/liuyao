@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/chapters.dart';
+import '../data/study_groups.dart';
 import '../models/srs_card.dart';
 import '../services/srs_scheduler.dart';
 import '../services/storage_service.dart';
@@ -120,6 +121,21 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen> {
                 counts: SrsScheduler.count(chapter.itemKeys, _cards),
                 onPractice: _practice,
               ),
+            if (!_loading) ...[
+              const SizedBox(height: 28),
+              Text('本章小组', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                '今日按这个顺序每天引入一组。',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              for (final group in StudyGroups.forChapter(chapter.id))
+                _GroupRow(
+                  title: group.title,
+                  counts: SrsScheduler.count(group.itemKeys, _cards),
+                ),
+            ],
           ],
         ),
       ),
@@ -164,7 +180,41 @@ class _ChapterProgressCard extends StatelessWidget {
   }
 }
 
-/// 按章巩固的队列。只含本章知识点，不受今日新学上限约束。
+class _GroupRow extends StatelessWidget {
+  final String title;
+  final SrsCounts counts;
+
+  const _GroupRow({required this.title, required this.counts});
+
+  @override
+  Widget build(BuildContext context) {
+    final started = counts.total - counts.unseen;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(
+            counts.unseen == 0 ? Icons.check_circle : Icons.circle_outlined,
+            size: 20,
+            color: counts.unseen == 0
+                ? const Color(0xFF00897B)
+                : Theme.of(context).disabledColor,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(title, style: Theme.of(context).textTheme.bodyLarge),
+          ),
+          Text(
+            '已学 $started/${counts.total} · 已掌握 ${counts.mastered}',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 按章巩固的队列。只含本章知识点，不受今日小组引入的约束。
 Future<List<String>> loadChapterQueue(Chapter chapter) async {
   final cards = await StorageService.loadCards();
   return SrsScheduler.moduleQueue(
