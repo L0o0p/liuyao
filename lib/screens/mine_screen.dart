@@ -10,7 +10,9 @@ import '../models/srs_card.dart';
 import '../services/srs_scheduler.dart';
 import '../services/storage_service.dart';
 import '../services/sync/sync_engine.dart';
+import '../theme/app_theme.dart';
 import '../widgets/mastery_counts.dart';
+import '../widgets/tactile.dart';
 
 /// 连续学习天数、整体掌握度、学习数据导入导出和清空卡片。
 /// 已掌握：state 为 review，且间隔不少于 21 天。
@@ -155,7 +157,7 @@ class _MineScreenState extends State<MineScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.wrong),
             child: const Text('清空'),
           ),
         ],
@@ -172,57 +174,196 @@ class _MineScreenState extends State<MineScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final overall = SrsScheduler.count(
       KnowledgeCatalog.items.map((item) => item.itemKey),
       _cards,
     );
     final streak = SrsScheduler.studyStreakDays(_cards.values, DateTime.now());
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('我的'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh),
-            tooltip: '刷新',
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 16, 0),
+            child: Row(
+              children: [
+                const SizedBox(width: 40),
+                Expanded(
+                  child: Text(
+                    '六爻入门速记',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+                RoundIconButton(
+                  icon: Icons.refresh,
+                  tooltip: '刷新',
+                  onPressed: _load,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                    children: [
+                      _StreakCard(days: streak),
+                      const SizedBox(height: 12),
+                      _OverallCard(counts: overall),
+                      const SizedBox(height: 12),
+                      _TransferCard(
+                        busy: _transferring,
+                        onExport: _exportLearningData,
+                        onImport: _importLearningData,
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.warning_amber,
+                            size: 16,
+                            color: scheme.outline,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '敏感数据管理区',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: scheme.outline),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TactileButton(
+                        label: '清空全部卡片',
+                        icon: Icons.delete_forever,
+                        style: TactileButtonStyle.danger,
+                        onPressed: _clearAll,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '此操作将移除本地复习进度，建议提前导出备份',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelSmall?.copyWith(color: scheme.outline),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _StreakCard(days: streak),
-                  const SizedBox(height: 12),
-                  _OverallCard(counts: overall),
-                  const SizedBox(height: 8),
-                  Text(
-                    '已掌握是进入复习且间隔不少于 21 天的知识点。各章的掌握情况在「章节」里看。',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  _TransferCard(
-                    busy: _transferring,
-                    onExport: _exportLearningData,
-                    onImport: _importLearningData,
-                  ),
-                  const SizedBox(height: 24),
-                  Text('设置', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: _clearAll,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                    ),
-                    child: const Text('清空全部卡片'),
-                  ),
-                ],
+    );
+  }
+}
+
+class _StreakCard extends StatelessWidget {
+  final int days;
+
+  const _StreakCard({required this.days});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return TactileCard(
+      padding: const EdgeInsets.all(20),
+      clip: true,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            right: -44,
+            bottom: -44,
+            child: Container(
+              width: 112,
+              height: 112,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDF2D0).withValues(alpha: 0.6),
+                shape: BoxShape.circle,
               ),
             ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Pill(
+                label: days > 0 ? '学习打卡进行中' : '今天开始打卡',
+                icon: Icons.local_fire_department,
+                iconColor: const Color(0xFFE07129),
+                background: const Color(0xFFFDECD2),
+                foreground: scheme.primary,
+                border: AppColors.border.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 10),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '连续学习 ',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '$days',
+                      style: textTheme.displaySmall?.copyWith(height: 1),
+                    ),
+                    TextSpan(
+                      text: ' 天',
+                      style: textTheme.headlineSmall?.copyWith(
+                        color: scheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text('每天几分钟，熟记六爻基础', style: textTheme.bodySmall),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverallCard extends StatelessWidget {
+  final SrsCounts counts;
+
+  const _OverallCard({required this.counts});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return TactileCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SectionTitle(
+            title: '整体掌握度',
+            trailing: Pill(
+              label: '共 ${counts.total} 词条',
+              background: scheme.surfaceContainerHigh,
+              foreground: scheme.onSurfaceVariant,
+              border: AppColors.border.withValues(alpha: 0.2),
+            ),
+          ),
+          const SizedBox(height: 14),
+          MasteryCountRow(counts: counts),
+          const SizedBox(height: 16),
+          MasteryPercentLine(counts: counts),
+          const SizedBox(height: 6),
+          MasteryBar(counts: counts),
+          const SizedBox(height: 12),
+          const InfoNote(text: '已掌握是进入复习且间隔不少于 21 天的知识点。各章的掌握情况在「章节」里看。'),
+        ],
+      ),
     );
   }
 }
@@ -240,104 +381,40 @@ class _TransferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.folder_outlined,
-                  color: Theme.of(context).primaryColor,
+    return TactileCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SectionTitle(title: '学习数据管理', icon: Icons.sync),
+          const SizedBox(height: 8),
+          Text(
+            '可导出到文件，换机时再导入。导入会与本机数据合并，不会覆盖较新的记录。旧版本导出的备份也能导入。',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TactileButton(
+                  label: '导出学习数据',
+                  icon: Icons.upload_file,
+                  style: TactileButtonStyle.secondary,
+                  onPressed: busy ? null : onExport,
                 ),
-                const SizedBox(width: 8),
-                Text('学习数据', style: Theme.of(context).textTheme.titleLarge),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '可导出到文件，换机时再导入。导入会与本机数据合并，不会覆盖较新的记录。旧版本导出的备份也能导入。',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: busy ? null : onExport,
-              icon: const Icon(Icons.ios_share),
-              label: const Text('导出学习数据'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: busy ? null : onImport,
-              icon: const Icon(Icons.file_open_outlined),
-              label: const Text('导入学习数据'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StreakCard extends StatelessWidget {
-  final int days;
-
-  const _StreakCard({required this.days});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Icon(
-              Icons.local_fire_department,
-              size: 36,
-              color: days > 0 ? Colors.deepOrange : Colors.grey,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('连续学习', style: Theme.of(context).textTheme.bodyMedium),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$days 天',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OverallCard extends StatelessWidget {
-  final SrsCounts counts;
-
-  const _OverallCard({required this.counts});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('整体掌握度', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            MasteryCountRow(counts: counts),
-            const SizedBox(height: 16),
-            MasteryBar(counts: counts),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TactileButton(
+                  label: '导入学习数据',
+                  icon: Icons.download_for_offline,
+                  style: TactileButtonStyle.secondary,
+                  onPressed: busy ? null : onImport,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
