@@ -20,13 +20,13 @@ class SyncEngine {
 
   static final SyncEngine instance = SyncEngine();
 
-  /// 数据版本号。合并真正改写本地数据后自增，进度页和错题本监听它来刷新。
+  /// 数据版本号。合并真正改写本地数据后自增，进度页监听它来刷新。
   static final ValueNotifier<int> dataVersion = ValueNotifier<int>(0);
 
   final SyncBackend _backend;
   Future<void>? _inFlight;
 
-  /// 启动、回到前台、答完一轮时调用。已在进行的同步不会重入。
+  /// 启动、回到前台、结束一次练习时调用。已在进行的同步不会重入。
   Future<void> sync() {
     final current = _inFlight;
     if (current != null) return current;
@@ -67,10 +67,10 @@ class SyncEngine {
     return result;
   }
 
-  /// 把进度和错题打成一份可分享的 JSON。
+  /// 把复习卡片打成一份可分享的 JSON。
   Future<Map<String, dynamic>> exportDocument() async {
     final items = <String, Map<String, dynamic>>{};
-    for (final prefix in [LocalStore.progressPrefix, LocalStore.wrongPrefix]) {
+    for (final prefix in [LocalStore.srsPrefix]) {
       final keys = await LocalStore.instance.keysWithPrefix(prefix);
       for (final key in keys) {
         final value = await LocalStore.instance.get(key);
@@ -87,6 +87,8 @@ class SyncEngine {
   }
 
   /// 校验导出文件，再按合并规则写入。不会覆盖本地较新的数据。
+  /// 版本 2 的备份（进度和错题）先按启动迁移的规则转成复习卡片；
+  /// 版本 2、3 里按日支_爻支记的十二长生卡再并到规则卡上。
   Future<ImportResult> importJson(String raw) async {
     final decoded = jsonDecode(raw);
     if (decoded is! Map) {
@@ -94,7 +96,7 @@ class SyncEngine {
     }
     final document = Map<String, dynamic>.from(decoded);
     final version = document['schema_version'];
-    if (version is! num || version != LocalStore.currentSchemaVersion) {
+    if (version != 2 && version != 3 && version != 4) {
       throw FormatException('不支持的学习数据版本：$version');
     }
     final itemsRaw = document['items'];
@@ -102,22 +104,31 @@ class SyncEngine {
       throw const FormatException('学习数据缺少 items');
     }
 
-    final incoming = <String, Map<String, dynamic>>{};
+    final items = <String, Map<String, dynamic>>{};
     for (final entry in itemsRaw.entries) {
       final key = entry.key.toString();
-      if (!key.startsWith(LocalStore.progressPrefix) &&
-          !key.startsWith(LocalStore.wrongPrefix)) {
-        continue;
-      }
       if (entry.value is! Map) {
         throw FormatException('条目格式不正确：$key');
       }
-      final value = Map<String, dynamic>.from(entry.value as Map);
-      value['updatedAt'] = LocalStore.updatedAtOf(value);
-      incoming[key] = value;
+      items[key] = Map<String, dynamic>.from(entry.value as Map);
     }
 
-    return _applyIncoming(incoming);
+    final records = <String, Map<String, dynamic>>{};
+    if (version == 2) {
+      final cards = LocalStore.cardsFromVersion2(items, DateTime.now());
+      for (final card in cards.values) {
+        records['${LocalStore.srsPrefix}${card.itemKey}'] = card.toJson();
+      }
+    } else {
+      for (final entry in items.entries) {
+        if (!entry.key.startsWith(LocalStore.srsPrefix)) continue;
+        final value = entry.value;
+        value['updatedAt'] = LocalStore.updatedAtOf(value);
+        records[entry.key] = value;
+      }
+    }
+
+    return _applyIncoming(LocalStore.recordsWithChangShengRules(records));
   }
 
   Future<void> _sync() async {

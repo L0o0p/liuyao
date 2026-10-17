@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'screens/learn_screen.dart';
-import 'screens/review_screen.dart';
-import 'screens/progress_screen.dart';
+import 'screens/chapters_screen.dart';
+import 'screens/mine_screen.dart';
+import 'screens/today_screen.dart';
 import 'services/storage_service.dart';
 import 'services/sync/sync_engine.dart';
 
@@ -37,7 +37,6 @@ class MyApp extends StatelessWidget {
           seedColor: const Color(0xFF673AB7),
           secondary: const Color(0xFFFFD700), // 金色
           surface: const Color(0xFFFAFAFA), // 浅灰背景
-          background: const Color(0xFFFFFFFF), // 纯白背景
         ),
 
         // 字体主题
@@ -120,13 +119,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  int _selectedIndex = 1; // 默认选中学习页面（中间位置）
-
-  final List<Widget> _pages = const [
-    ReviewScreen(), // 复习 - 第一个位置
-    LearnScreen(), // 学习 - 中间位置
-    ProgressScreen(), // 进度 - 第三个位置
-  ];
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -156,15 +149,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      TodayScreen(
+        onOpenChapters: () {
+          setState(() {
+            _selectedIndex = 1;
+          });
+        },
+      ),
+      const ChaptersScreen(),
+      const MineScreen(),
+    ];
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.refresh), label: '复习'),
-          BottomNavigationBarItem(icon: Icon(Icons.school), label: '学习'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '进度'),
+          BottomNavigationBarItem(icon: Icon(Icons.today), label: '今日'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: '章节'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: '我的'),
         ],
       ),
     );

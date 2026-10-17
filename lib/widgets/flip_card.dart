@@ -4,11 +4,17 @@ import '../models/question.dart';
 
 class FlipCard extends StatefulWidget {
   final Question question;
-  final VoidCallback? onCorrectAnswer;
-  final void Function(String userAnswer)? onWrongAnswer;
+  final void Function(Duration elapsed)? onCorrectAnswer;
+  final void Function(String userAnswer, Duration elapsed)? onWrongAnswer;
 
   /// 答错后点击「下一题」，由外部页面负责翻页
   final VoidCallback? onNext;
+
+  /// 答错时附在正确答案下面的说明。
+  final String? wrongHint;
+
+  /// 答错讲解里的「查表」。外部压栈打开，返回时本卡状态不变。
+  final VoidCallback? onLookup;
 
   const FlipCard({
     super.key,
@@ -16,6 +22,8 @@ class FlipCard extends StatefulWidget {
     this.onCorrectAnswer,
     this.onWrongAnswer,
     this.onNext,
+    this.wrongHint,
+    this.onLookup,
   });
 
   @override
@@ -27,6 +35,13 @@ class _FlipCardState extends State<FlipCard> {
   bool hasAnswered = false;
   bool isCorrect = false;
   bool hasRequestedNext = false;
+  late final DateTime _shownAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _shownAt = DateTime.now();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,10 +81,12 @@ class _FlipCardState extends State<FlipCard> {
                   horizontal: 20,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).primaryColor.withOpacity(0.2),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -92,7 +109,7 @@ class _FlipCardState extends State<FlipCard> {
 
                 Color buttonColor = Theme.of(
                   context,
-                ).primaryColor.withOpacity(0.6);
+                ).primaryColor.withValues(alpha: 0.6);
                 if (hasAnswered) {
                   // 确保正确答案总是绿色
                   if (isCorrectOption) {
@@ -115,6 +132,9 @@ class _FlipCardState extends State<FlipCard> {
                     onPressed: hasAnswered
                         ? null
                         : () {
+                            final elapsed = DateTime.now().difference(
+                              _shownAt,
+                            );
                             setState(() {
                               selectedOption = option;
                               hasAnswered = true;
@@ -128,24 +148,26 @@ class _FlipCardState extends State<FlipCard> {
                               HapticFeedback.mediumImpact();
                             }
 
-                            // 如果答案正确，延迟一下显示反馈，然后自动翻页
+                            // 答对短暂停顿，让对错反馈留在屏幕上，再进入下一题。
                             if (isCorrect && widget.onCorrectAnswer != null) {
                               Future.delayed(
                                 const Duration(milliseconds: 300),
                                 () {
-                                  widget.onCorrectAnswer!();
+                                  if (!mounted) return;
+                                  widget.onCorrectAnswer!(elapsed);
                                 },
                               );
                             } else if (!isCorrect &&
                                 widget.onWrongAnswer != null) {
-                              // 答错了，通知外部记录错题
-                              widget.onWrongAnswer!(option);
+                              widget.onWrongAnswer!(option, elapsed);
                             }
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: hasAnswered
                           ? buttonColor
-                          : Theme.of(context).primaryColor.withOpacity(0.1),
+                          : Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.1),
                       foregroundColor: hasAnswered
                           ? Colors.white
                           : Theme.of(context).primaryColor,
@@ -157,7 +179,7 @@ class _FlipCardState extends State<FlipCard> {
                       ),
                       elevation: hasAnswered ? 2 : 0,
                       shadowColor: hasAnswered
-                          ? buttonColor.withOpacity(0.3)
+                          ? buttonColor.withValues(alpha: 0.3)
                           : Colors.transparent,
                     ),
                     child: Text(
@@ -166,7 +188,7 @@ class _FlipCardState extends State<FlipCard> {
                     ),
                   ),
                 );
-              }).toList(),
+              }),
 
               // 选择后的反馈显示
               if (hasAnswered) ...[
@@ -190,7 +212,7 @@ class _FlipCardState extends State<FlipCard> {
                     boxShadow: [
                       BoxShadow(
                         color: (isCorrect ? Colors.green : Colors.red)
-                            .withOpacity(0.2),
+                            .withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -218,9 +240,33 @@ class _FlipCardState extends State<FlipCard> {
                         style: TextStyle(fontSize: buttonFontSize),
                         textAlign: TextAlign.center,
                       ),
+                      if (!isCorrect &&
+                          widget.wrongHint != null &&
+                          widget.wrongHint!.isNotEmpty) ...[
+                        SizedBox(height: isSmallScreen ? 8.0 : 12.0),
+                        Text(
+                          widget.wrongHint!,
+                          style: TextStyle(fontSize: buttonFontSize - 2),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ],
                   ),
                 ),
+                if (!isCorrect && widget.onLookup != null) ...[
+                  SizedBox(height: isSmallScreen ? 12.0 : 16.0),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: widget.onLookup,
+                      icon: const Icon(Icons.table_chart_outlined),
+                      label: Text(
+                        '查表',
+                        style: TextStyle(fontSize: buttonFontSize),
+                      ),
+                    ),
+                  ),
+                ],
                 // 答错时由用户确认看清答案后再进入下一题
                 if (!isCorrect && widget.onNext != null) ...[
                   SizedBox(height: isSmallScreen ? 12.0 : 16.0),
