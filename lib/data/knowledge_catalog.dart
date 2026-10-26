@@ -6,6 +6,7 @@ import '../models/question.dart';
 import '../services/rule_functions.dart';
 import 'di_zhi.dart';
 import 'gua_data.dart';
+import 'kong_wang.dart';
 import 'tian_gan.dart';
 import 'wu_xing.dart';
 import 'zhi_relations.dart';
@@ -83,6 +84,9 @@ class KnowledgeCatalog {
   /// 旧版本按「日支_爻支」记的十二长生卡，只在迁移和兼容旧记录时出现。
   static const String legacyChangShengType = 'changsheng';
 
+  /// 算空亡的复习卡挂在六旬上。出题每次从这一旬里另抽一个日柱。
+  static const String kongWangType = 'kongwang';
+
   static const Map<String, String> questionTypeLabels = {
     'gan_wuxing': '天干五行',
     'zhi_wuxing': '地支五行',
@@ -110,6 +114,7 @@ class KnowledgeCatalog {
     'wuxing_ke': '五行相克',
     changShengStageType: '十二长生阶段',
     changShengStartType: '十二长生起点',
+    kongWangType: '算空亡',
     'gua_to_xiang': '六十四卦',
     'xiang_to_gua': '六十四卦',
   };
@@ -197,6 +202,9 @@ class KnowledgeCatalog {
       throw Exception('Unknown question: $questionType:$input');
     }
     final rng = random ?? Random();
+    if (questionType == kongWangType) {
+      return kongWangQuestion(xun: input, random: rng);
+    }
     if (isChangShengRule(questionType) && rng.nextInt(4) != 0) {
       final String riZhi;
       final String yaoZhi;
@@ -255,6 +263,43 @@ class KnowledgeCatalog {
       questionType: ruleType,
       input: ruleType == changShengStartType ? element : stage,
       context: {'riZhi': riZhi, 'yaoZhi': yaoZhi},
+    );
+  }
+
+  /// 旬空推算题。卡片记在旬首上，题面是这一旬里的一个日柱。
+  /// [riZhu] 写成「戊戌」；不传就从这一旬的十日里抽。
+  static Question kongWangQuestion({
+    required String xun,
+    String? riZhu,
+    Random? random,
+  }) {
+    final item = find(kongWangType, xun);
+    final days = daysInXun(xun);
+    if (item == null || days.isEmpty) {
+      throw ArgumentError('无法推算空亡: $xun');
+    }
+    final rng = random ?? Random();
+    final RiZhu day;
+    if (riZhu == null) {
+      day = days[rng.nextInt(days.length)];
+    } else {
+      final matched = days.where((candidate) => candidate.text == riZhu);
+      if (matched.length != 1) {
+        throw ArgumentError('$riZhu不在$xun旬');
+      }
+      day = matched.single;
+    }
+    final answer = kongWangOf(day.gan, day.zhi);
+    if (answer == null || answer != item.correctAnswer) {
+      throw StateError('空亡计算和目录不一致: $xun ${day.text}');
+    }
+    return Question(
+      text: '${day.text}日，空亡的地支是？',
+      options: _options(answer, item.distractors, rng),
+      correctAnswer: answer,
+      questionType: kongWangType,
+      input: xun,
+      context: {'riGan': day.gan, 'riZhi': day.zhi},
     );
   }
 
@@ -632,6 +677,21 @@ List<KnowledgeItem> _buildItems() {
     );
   }
 
+  final kongPairs = kongWangPairs();
+  for (var i = 0; i < xunHeadBranches.length; i++) {
+    final xun = '甲${xunHeadBranches[i]}';
+    final answer = kongPairs[i];
+    add(
+      KnowledgeItem(
+        questionType: KnowledgeCatalog.kongWangType,
+        input: xun,
+        correctAnswer: answer,
+        text: '$xun旬，空亡的地支是？',
+        distractors: _without(kongPairs, answer),
+      ),
+    );
+  }
+
   final guaNames = getAllGuaNames();
   final guaXiangs = getAllGuaXiang();
   for (final name in guaNames) {
@@ -770,6 +830,15 @@ List<StudyModule> _buildModules() {
       firstRound: FirstRoundKind.eachItem,
     ),
     StudyModule(
+      id: 'kongwang',
+      name: '算空亡',
+      subtitle: '由日柱算出旬空的两个地支',
+      icon: Icons.hourglass_empty,
+      color: Colors.deepPurple,
+      questionTypes: [KnowledgeCatalog.kongWangType],
+      firstRound: FirstRoundKind.eachItem,
+    ),
+    StudyModule(
       id: '64gua',
       name: '六十四卦',
       subtitle: '速记六十四卦卦象',
@@ -792,6 +861,7 @@ List<StudyModule> _buildModules() {
         'wuxing',
         'hechong',
         'shierchangsheng',
+        'kongwang',
         '64gua',
       ],
     ),

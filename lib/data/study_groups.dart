@@ -57,6 +57,7 @@ List<StudyGroup> _buildGroups() {
   final diZhi = diZhiAtlas();
   final relations = xingChongHeHaiAtlas();
   final changSheng = changShengAtlas();
+  final kongWang = kongWangAtlas();
   final gua = guaAtlas();
 
   StudyGroup byTypes({
@@ -308,6 +309,16 @@ List<StudyGroup> _buildGroups() {
       types: [KnowledgeCatalog.changShengStartType],
       tables: [_table(changSheng, '长生起点')],
       mnemonic: '木长生在亥，火长生在寅，金长生在巳，水土长生在申。',
+    ),
+    byTypes(
+      id: 'kongwang',
+      title: '算空亡',
+      chapterId: 'kongwang',
+      types: [KnowledgeCatalog.kongWangType],
+      tables: kongWang.tables,
+      mnemonic:
+          '从日干倒着数到甲，日支退同样的位数得到旬首，再往回数两位。'
+          '甲子旬戌亥，甲戌旬申酉，甲申旬午未，甲午旬辰巳，甲辰旬寅卯，甲寅旬子丑。',
     ),
     ..._guaPalaceGroups(_table(gua, '卦名与卦象')),
   ];

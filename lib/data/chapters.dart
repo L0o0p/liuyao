@@ -113,6 +113,11 @@ List<Chapter> _buildChapters() {
       ],
     ),
     Chapter(
+      id: 'kongwang',
+      atlas: kongWangAtlas(),
+      questionTypes: const [KnowledgeCatalog.kongWangType],
+    ),
+    Chapter(
       id: 'gua64',
       atlas: guaAtlas(),
       questionTypes: const ['gua_to_xiang', 'xiang_to_gua'],

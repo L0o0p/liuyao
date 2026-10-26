@@ -2,6 +2,7 @@ import '../models/question.dart';
 import 'di_zhi.dart';
 import 'gua_data.dart';
 import 'knowledge_catalog.dart';
+import 'kong_wang.dart';
 import 'tian_gan.dart';
 import 'wu_xing.dart';
 import 'zhi_relations.dart';
@@ -36,7 +37,8 @@ class TeachingNotes {
         return TeachingNote(
           title: '天干阴阳',
           fact: '${item.input}属${item.correctAnswer}',
-          hint: '从甲起阳阴相间。阳：${_same(tianGan, 'yinYang', '阳')}。阴：${_same(tianGan, 'yinYang', '阴')}。',
+          hint:
+              '从甲起阳阴相间。阳：${_same(tianGan, 'yinYang', '阳')}。阴：${_same(tianGan, 'yinYang', '阴')}。',
         );
       case 'gan_month':
       case 'gan_time':
@@ -57,7 +59,8 @@ class TeachingNotes {
         return TeachingNote(
           title: '地支阴阳',
           fact: '${item.input}属${item.correctAnswer}',
-          hint: '子起阳阴相间。阳：${_same(diZhi, 'yinYang', '阳')}。阴：${_same(diZhi, 'yinYang', '阴')}。',
+          hint:
+              '子起阳阴相间。阳：${_same(diZhi, 'yinYang', '阳')}。阴：${_same(diZhi, 'yinYang', '阴')}。',
         );
       case 'zhi_direction':
       case 'zhi_season':
@@ -154,6 +157,14 @@ class TeachingNotes {
               '口诀：木长生在亥，火长生在寅，金长生在巳，水土长生在申。'
               '推算时先看日支属什么五行，再从这个起点按地支顺数到爻支。',
         );
+      case KnowledgeCatalog.kongWangType:
+        return TeachingNote(
+          title: '算空亡',
+          fact: '${item.input}旬空${item.correctAnswer}',
+          hint:
+              '从日干倒着数到甲，日支退同样的位数得到旬首，再从旬首往回数两位。'
+              '甲子旬戌亥，甲戌旬申酉，甲申旬午未，甲午旬辰巳，甲辰旬寅卯，甲寅旬子丑。',
+        );
       case 'gua_to_xiang':
         return TeachingNote(
           title: '六十四卦',
@@ -188,8 +199,21 @@ class TeachingNotes {
 
   /// 答错讲解。推算题按这道题的日支、爻支分步讲，其余同 [forKey]。
   static TeachingNote? forQuestion(Question question) {
+    final riGan = question.context['riGan'];
     final riZhi = question.context['riZhi'];
     final yaoZhi = question.context['yaoZhi'];
+    if (question.questionType == KnowledgeCatalog.kongWangType &&
+        riGan != null &&
+        riZhi != null) {
+      final steps = kongWangSteps(riGan, riZhi);
+      if (steps.isNotEmpty) {
+        return TeachingNote(
+          title: '算空亡',
+          fact: '$riGan$riZhi日空${question.correctAnswer}',
+          hint: steps.join(' → '),
+        );
+      }
+    }
     if (KnowledgeCatalog.isChangShengRule(question.questionType) &&
         riZhi != null &&
         yaoZhi != null) {

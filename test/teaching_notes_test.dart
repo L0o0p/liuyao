@@ -7,11 +7,7 @@ void main() {
   test('教学卡的结论包含正确答案', () {
     for (final item in KnowledgeCatalog.items) {
       final note = TeachingNotes.forItem(item);
-      expect(
-        note.fact,
-        contains(item.correctAnswer),
-        reason: item.itemKey,
-      );
+      expect(note.fact, contains(item.correctAnswer), reason: item.itemKey);
       expect(note.hint, isNotEmpty, reason: item.itemKey);
     }
   });
@@ -23,8 +19,10 @@ void main() {
   });
 
   test('图鉴覆盖主要对照表', () {
-    final titles = buildAtlasChapters().map((chapter) => chapter.title).toList();
-    expect(titles, ['五行生克', '天干', '地支', '刑冲合害', '十二长生', '六十四卦']);
+    final titles = buildAtlasChapters()
+        .map((chapter) => chapter.title)
+        .toList();
+    expect(titles, ['五行生克', '天干', '地支', '刑冲合害', '十二长生', '算空亡', '六十四卦']);
     final gua = buildAtlasChapters().firstWhere(
       (chapter) => chapter.title == '六十四卦',
     );

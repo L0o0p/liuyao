@@ -1,5 +1,6 @@
 import 'di_zhi.dart';
 import 'gua_data.dart';
+import 'kong_wang.dart';
 import 'tian_gan.dart';
 import 'wu_xing.dart';
 import 'zhi_relations.dart';
@@ -36,6 +37,7 @@ List<AtlasChapter> buildAtlasChapters() {
     diZhiAtlas(),
     xingChongHeHaiAtlas(),
     changShengAtlas(),
+    kongWangAtlas(),
     guaAtlas(),
   ];
 }
@@ -198,6 +200,29 @@ AtlasChapter changShengAtlas() {
           for (final entry in wuXingChangShengStart.entries)
             [entry.key, entry.value],
         ],
+      ),
+    ],
+  );
+}
+
+List<String> _kongWangRow(String head) {
+  final days = daysInXun('甲$head');
+  return [
+    '甲$head旬',
+    '${days.first.text}至${days.last.text}',
+    kongWangOf('甲', head)!,
+  ];
+}
+
+AtlasChapter kongWangAtlas() {
+  return AtlasChapter(
+    title: '算空亡',
+    summary: '从日干倒着数到甲，日支退同样的位数得到旬首，再往回数两位。',
+    tables: [
+      AtlasTable(
+        title: '旬空',
+        columns: ['旬', '日柱', '空亡'],
+        rows: [for (final head in xunHeadBranches) _kongWangRow(head)],
       ),
     ],
   );

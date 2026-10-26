@@ -10,6 +10,7 @@ void main() {
       '地支',
       '刑冲合害',
       '十二长生',
+      '算空亡',
       '六十四卦',
     ]);
     expect(
@@ -73,6 +74,8 @@ void main() {
     expect(Chapters.forQuestionType('changsheng_start')!.id, 'changsheng');
     expect(Chapters.forQuestionType('changsheng')!.id, 'changsheng');
     expect(Chapters.byId('changsheng')!.items, hasLength(17));
+    expect(Chapters.byId('kongwang')!.items, hasLength(6));
+    expect(Chapters.forQuestionType('kongwang')!.id, 'kongwang');
   });
 
   test('六十四卦章每 16 题休息，其余章节不打断', () {

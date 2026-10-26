@@ -13,6 +13,7 @@ class Question {
 
   /// 出题时选定、但不进 itemKey 的具体条件。
   /// 十二长生规则卡用它带上这道题的日支 riZhi 和爻支 yaoZhi，答错讲解按此推算。
+  /// 算空亡用日干 riGan 和日支 riZhi。
   /// 不写进 JSON，重新出题时会重新抽取。
   final Map<String, String> context;
 

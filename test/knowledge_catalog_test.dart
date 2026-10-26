@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liuyao/data/knowledge_catalog.dart';
+import 'package:liuyao/data/kong_wang.dart';
 import 'package:liuyao/data/teaching_notes.dart';
 import 'package:liuyao/data/zhi_relations.dart';
 import 'package:liuyao/models/question.dart';
@@ -45,6 +46,7 @@ void main() {
       'wuxing_ke',
       'changsheng_stage',
       'changsheng_start',
+      'kongwang',
       'gua_to_xiang',
       'xiang_to_gua',
     ];
@@ -186,6 +188,65 @@ void main() {
       stageKey: 'changsheng_stage:长生',
     ));
     expect(KnowledgeCatalog.legacyChangShengRules('午'), isNull);
+  });
+
+  test('戊戌日在甲午旬，空亡是辰巳，四个选项都是旬空对', () {
+    final question = KnowledgeCatalog.kongWangQuestion(
+      xun: '甲午',
+      riZhu: '戊戌',
+      random: Random(1),
+    );
+    expect(question.text, '戊戌日，空亡的地支是？');
+    expect(question.correctAnswer, '辰巳');
+    expect(question.itemKey, 'kongwang:甲午');
+    expect(question.context, {'riGan': '戊', 'riZhi': '戌'});
+    expect(question.options, hasLength(4));
+    expect(question.options.toSet(), hasLength(4));
+    expect(kongWangPairs().toSet(), containsAll(question.options));
+
+    expect(kongWangSteps('戊', '戌'), [
+      '从戊倒着数到甲：戊、丁、丙、乙、甲，退4位',
+      '从戌退4位：戌、酉、申、未、午，旬首是甲午',
+      '从午往回数两位：午、巳、辰，空亡辰巳',
+    ]);
+    final note = TeachingNotes.forQuestion(question)!;
+    expect(note.fact, '戊戌日空辰巳');
+    expect(note.hint, endsWith('空亡辰巳'));
+
+    expect(kongWangOf('甲', '子'), '戌亥');
+    expect(kongWangOf('甲', '丑'), isNull);
+    expect(xunHeadBranches, ['子', '戌', '申', '午', '辰', '寅']);
+    expect(kongWangPairs(), ['戌亥', '申酉', '午未', '辰巳', '寅卯', '子丑']);
+
+    final days = [for (final head in xunHeadBranches) ...daysInXun('甲$head')];
+    expect(days, hasLength(60));
+    expect(days.map((day) => day.text).toSet(), hasLength(60));
+    for (final head in xunHeadBranches) {
+      final pair = kongWangOf('甲', head);
+      for (final day in daysInXun('甲$head')) {
+        expect(kongWangOf(day.gan, day.zhi), pair, reason: day.text);
+      }
+    }
+
+    for (var seed = 0; seed < 20; seed++) {
+      final drawn = KnowledgeCatalog.generateQuestion(
+        'kongwang',
+        '甲午',
+        random: Random(seed),
+      );
+      final again = KnowledgeCatalog.generateQuestion(
+        'kongwang',
+        '甲午',
+        random: Random(seed),
+      );
+      expect(again.text, drawn.text);
+      expect(again.options, drawn.options);
+      expect(drawn.itemKey, 'kongwang:甲午');
+      expect(drawn.correctAnswer, '辰巳');
+      expect(drawn.options, hasLength(4));
+      final riZhu = drawn.text.substring(0, 2);
+      expect(daysInXun('甲午').map((day) => day.text), contains(riZhu));
+    }
   });
 
   test('规则卡出题依赖这条规则，固定种子可复现，itemKey 始终是规则卡', () {
