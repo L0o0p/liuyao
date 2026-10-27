@@ -1,5 +1,9 @@
 import 'di_zhi.dart';
 import 'gua_data.dart';
+import 'kong_wang.dart';
+import 'liu_qin.dart';
+import 'shi_ying.dart';
+import 'yong_shen.dart';
 import 'tian_gan.dart';
 import 'wu_xing.dart';
 import 'zhi_relations.dart';
@@ -36,7 +40,12 @@ List<AtlasChapter> buildAtlasChapters() {
     diZhiAtlas(),
     xingChongHeHaiAtlas(),
     changShengAtlas(),
+    kongWangAtlas(),
     guaAtlas(),
+    shiYingAtlas(),
+    liuQinAtlas(),
+    yongShenAtlas(),
+    wangXiangAtlas(),
   ];
 }
 
@@ -197,6 +206,137 @@ AtlasChapter changShengAtlas() {
         rows: [
           for (final entry in wuXingChangShengStart.entries)
             [entry.key, entry.value],
+        ],
+      ),
+    ],
+  );
+}
+
+List<String> _kongWangRow(String head) {
+  final days = daysInXun('甲$head');
+  return [
+    '甲$head旬',
+    '${days.first.text}至${days.last.text}',
+    kongWangOf('甲', head)!,
+  ];
+}
+
+AtlasChapter kongWangAtlas() {
+  return AtlasChapter(
+    title: '算空亡',
+    summary: '从日干倒着数到甲，日支退同样的位数得到旬首，再往回数两位。',
+    tables: [
+      AtlasTable(
+        title: '旬空',
+        columns: ['旬', '日柱', '空亡'],
+        rows: [for (final head in xunHeadBranches) _kongWangRow(head)],
+      ),
+    ],
+  );
+}
+
+AtlasChapter shiYingAtlas() {
+  final names = getAllGuaNames();
+  return AtlasChapter(
+    title: '寻世应',
+    summary: '先看卦在本宫里排第几，再按世次定世爻，应爻隔两位。',
+    tables: [
+      AtlasTable(
+        title: '世次',
+        columns: ['世次', '世爻', '应爻'],
+        rows: [
+          for (var i = 0; i < shiCiNames.length; i++)
+            [
+              shiCiNames[i],
+              yaoPositionNames[shiYaoIndex[i]],
+              yaoPositionNames[(shiYaoIndex[i] + 3) % yaoPositionNames.length],
+            ],
+        ],
+      ),
+      AtlasTable(
+        title: '八宫卦序',
+        columns: ['宫', '八卦'],
+        rows: [
+          for (var i = 0; i < palaceNames.length; i++)
+            [
+              '${palaceNames[i]}宫',
+              names
+                  .sublist(
+                    i * shiCiNames.length,
+                    i * shiCiNames.length + shiCiNames.length,
+                  )
+                  .join('、'),
+            ],
+        ],
+      ),
+    ],
+  );
+}
+
+AtlasChapter liuQinAtlas() {
+  const relations = [
+    ('生我', '父母'),
+    ('比和', '兄弟'),
+    ('我生', '子孙'),
+    ('我克', '妻财'),
+    ('克我', '官鬼'),
+  ];
+  return AtlasChapter(
+    title: '寻六亲',
+    summary: '以卦宫五行为我，看爻五行和宫五行的生克。',
+    tables: [
+      AtlasTable(
+        title: '六亲',
+        columns: ['关系', '六亲'],
+        rows: [
+          for (final relation in relations) [relation.$1, relation.$2],
+        ],
+      ),
+      AtlasTable(
+        title: '八宫五行',
+        columns: ['宫', '五行'],
+        rows: [
+          for (final palace in palaceNames) [palace, palaceWuXing[palace]!],
+        ],
+      ),
+    ],
+  );
+}
+
+AtlasChapter yongShenAtlas() {
+  return AtlasChapter(
+    title: '定用神',
+    summary: '先看所测之事，再取对应的六亲；测自己取世爻。',
+    tables: [
+      AtlasTable(
+        title: '用神',
+        columns: ['所测', '用神'],
+        rows: [
+          for (final matter in yongShenMatters)
+            [matter.matter, matter.yongShen],
+        ],
+      ),
+    ],
+  );
+}
+
+AtlasChapter wangXiangAtlas() {
+  const relations = [
+    ('同我', '旺'),
+    ('我生', '相'),
+    ('生我', '休'),
+    ('克我', '囚'),
+    ('我克', '死'),
+  ];
+  return AtlasChapter(
+    title: '判断旺相',
+    summary: '以月令五行为我，看爻五行和月令的生克。',
+    tables: [
+      AtlasTable(
+        title: '旺相休囚死',
+        columns: ['关系', '状态'],
+        rows: [
+          for (final relation in relations) [relation.$1, relation.$2],
         ],
       ),
     ],

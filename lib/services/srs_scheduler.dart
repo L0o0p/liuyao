@@ -86,7 +86,7 @@ class SrsScheduler {
     );
   }
 
-  /// 答错，或有失误且这次答对还凑不满连续 2 次时，同一条还要留在本次队列末尾。
+  /// 答错，或有失误且这次答对还凑不满连续 2 次。此时间隔先不拉长。
   static bool replaysInSession({
     required SrsCard card,
     required bool correct,

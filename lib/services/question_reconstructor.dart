@@ -33,6 +33,7 @@ class QuestionReconstructor {
       correctAnswer: question.correctAnswer,
       questionType: record.questionType,
       input: record.input,
+      context: question.context,
     );
   }
 
@@ -185,9 +186,8 @@ class QuestionReconstructor {
 
     // 旧题干「若日支为『午』，某爻地支为『酉』」和现在的推算题干，都归到日支五行的起点卡。
     if (text.contains('十二长生')) {
-      final match = RegExp(
-        r'日支(?:为『)?(.)』?[，、](?:某爻地支为『|爻支)(.)',
-      ).firstMatch(text);
+      final match = RegExp(r'日支(?:为『)?(.)』?[，、](?:某爻地支为『|爻支)(.)')
+          .firstMatch(text);
       final riZhi = match?.group(1);
       final yaoZhi = match?.group(2);
       if (riZhi != null &&
