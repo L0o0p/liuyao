@@ -6,6 +6,8 @@ import 'screens/mine_screen.dart';
 import 'screens/today_screen.dart';
 import 'services/storage_service.dart';
 import 'services/sync/sync_engine.dart';
+import 'theme/app_theme.dart';
+import 'widgets/tactile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,86 +28,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '六爻学习 App',
-      theme: ThemeData(
-        // 主色调：深紫色，体现传统文化的庄重感
-        primarySwatch: Colors.deepPurple,
-        primaryColor: const Color(0xFF673AB7), // 深紫色
-        primaryColorDark: const Color(0xFF512DA8), // 更深的紫色
-        primaryColorLight: const Color(0xFF9575CD), // 浅紫色
-        // 辅助色：金色，体现传统文化的华贵感
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF673AB7),
-          secondary: const Color(0xFFFFD700), // 金色
-          surface: const Color(0xFFFAFAFA), // 浅灰背景
-        ),
-
-        // 字体主题
-        textTheme: const TextTheme(
-          headlineLarge: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF673AB7),
-          ),
-          headlineMedium: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF673AB7),
-          ),
-          titleLarge: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E2E2E),
-          ),
-          bodyLarge: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF2E2E2E),
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF666666),
-          ),
-        ),
-
-        // 卡片主题
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          color: Colors.white,
-        ),
-
-        // 按钮主题
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF673AB7),
-            foregroundColor: Colors.white,
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-        ),
-
-        // 底部导航栏主题
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          selectedItemColor: Color(0xFF673AB7),
-          unselectedItemColor: Color(0xFF999999),
-          backgroundColor: Colors.white,
-          elevation: 8,
-        ),
-
-        // AppBar主题
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF673AB7),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-        ),
-      ),
+      theme: buildAppTheme(),
       home: const HomePage(),
     );
   }
@@ -120,6 +43,24 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _selectedIndex = 0;
+
+  static const _navItems = [
+    AppNavItem(
+      icon: Icons.calendar_today_outlined,
+      activeIcon: Icons.calendar_today,
+      label: '今日',
+    ),
+    AppNavItem(
+      icon: Icons.auto_stories_outlined,
+      activeIcon: Icons.auto_stories,
+      label: '章节',
+    ),
+    AppNavItem(
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      label: '我的',
+    ),
+  ];
 
   @override
   void initState() {
@@ -161,16 +102,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       const MineScreen(),
     ];
     return Scaffold(
-      body: pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+      body: AppBackground(child: pages[_selectedIndex]),
+      bottomNavigationBar: AppBottomNav(
+        items: _navItems,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.today), label: '今日'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: '章节'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: '我的'),
-        ],
       ),
     );
   }

@@ -39,7 +39,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('今天新学：五行相生（5 条）'), findsOneWidget);
-    await tester.tap(find.text('开始'));
+    await tester.tap(find.text('开始学习'));
     await settle(tester);
     await settle(tester);
 
@@ -106,6 +106,8 @@ void main() {
     expect(first, lessThan(second));
     expect(second, lessThan(third));
 
+    await tester.ensureVisible(find.text('地支'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('地支'));
     await settle(tester);
 
@@ -175,8 +177,7 @@ void main() {
     await tester.tap(find.text('我的'));
     await settle(tester);
 
-    expect(find.text('连续学习'), findsOneWidget);
-    expect(find.text('0 天'), findsOneWidget);
+    expect(find.text('连续学习 0 天', findRichText: true), findsOneWidget);
     expect(find.text('整体掌握度'), findsOneWidget);
     expect(find.text('导出学习数据'), findsOneWidget);
     expect(find.text('导入学习数据'), findsOneWidget);

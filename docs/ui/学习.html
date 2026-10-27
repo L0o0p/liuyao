@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <title>六爻入门速记 - 章节目录</title>
+    <!-- Google Fonts: Plus Jakarta Sans & Material Symbols Outlined -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Noto+Sans+SC:wght@500;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Theme Configuration Verbatim -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f1eee3",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#31312a",
+                        "on-secondary-fixed": "#082009",
+                        "surface-variant": "#e6e2d8",
+                        "on-tertiary-fixed": "#251a00",
+                        "secondary-fixed": "#cdebc5",
+                        "surface-container-highest": "#e6e2d8",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdf9b",
+                        "surface": "#fdf9ee",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#4b6548",
+                        "on-tertiary-fixed-variant": "#5a4300",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#ece8dd",
+                        "on-background": "#1c1c15",
+                        "outline-variant": "#d6c3b8",
+                        "tertiary-fixed-dim": "#f1c042",
+                        "secondary-fixed-dim": "#b1cfab",
+                        "primary-container": "#7b4e2d",
+                        "on-primary-container": "#ffc39b",
+                        "on-primary-fixed-variant": "#663d1d",
+                        "surface-tint": "#825432",
+                        "surface-bright": "#fdf9ee",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#51443c",
+                        "surface-dim": "#dddacf",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#cdebc5",
+                        "tertiary": "#533e00",
+                        "surface-container-low": "#f7f3e8",
+                        "inverse-on-surface": "#f4f1e6",
+                        "primary": "#603718",
+                        "primary-fixed": "#ffdcc6",
+                        "on-tertiary-container": "#fbc84a",
+                        "on-primary-fixed": "#301400",
+                        "primary-fixed-dim": "#f6ba91",
+                        "background": "#fdf9ee",
+                        "on-surface": "#1c1c15",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#705400",
+                        "inverse-primary": "#f6ba91",
+                        "on-secondary-container": "#516b4d",
+                        "outline": "#83746b",
+                        "on-secondary-fixed-variant": "#344d31"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "1.25rem",
+                        "gutter": "1rem",
+                        "space-lg": "1.5rem",
+                        "space-xl": "2rem",
+                        "space-sm": "0.5rem",
+                        "space-xs": "0.25rem",
+                        "space-md": "1rem"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "headline-md": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "headline-sm": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "body-md": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "label-sm": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "headline-lg": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "body-lg": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "body-sm": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "label-md": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "display": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "700" }],
+                        "headline-md": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "headline-sm": ["18px", { "lineHeight": "26px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "500" }],
+                        "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "800" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "700" }],
+                        "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
+
+        .material-symbols-outlined.fill-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Tactile Matcha & Biscuit styling rules */
+        body {
+            background-color: #dbead5;
+            background-image:
+                radial-gradient(#c6dfbd 1.5px, transparent 1.5px),
+                radial-gradient(#c6dfbd 1.5px, #dbead5 1.5px);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+        }
+
+        .tactile-card {
+            border: 2px solid #7b4e2d;
+            box-shadow: 0 4px 0 #7b4e2d, 0 8px 16px rgba(123, 78, 45, 0.08);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tactile-card:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #7b4e2d, 0 4px 8px rgba(123, 78, 45, 0.08);
+        }
+
+        .tactile-btn {
+            border: 2px solid #5c381e;
+            box-shadow: 0 3px 0 #5c381e;
+            transition: all 0.1s ease;
+        }
+
+        .tactile-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 #5c381e;
+        }
+
+        .pill-badge {
+            border: 1.5px solid #7b4e2d;
+        }
+    </style>
+</head>
+
+<body
+    class="min-h-screen text-on-surface flex flex-col justify-between selection:bg-tertiary-fixed-dim selection:text-primary">
+    <!-- Mobile/Handheld Frame Wrapper -->
+    <div
+        class="w-full max-w-md mx-auto min-h-screen flex flex-col relative shadow-[0_0_32px_rgba(75,101,72,0.18)] bg-[#eef5eb]">
+        <!-- Shared TopAppBar Component -->
+        <header
+            class="bg-surface dark:bg-surface border-b-2 border-primary-container/20 dark:border-outline-variant/30 shadow-[0_2px_0_rgba(123,78,45,0.08)] sticky top-0 z-40">
+            <div class="flex justify-between items-center w-full px-4 h-14 max-w-md mx-auto">
+                <button aria-label="关闭"
+                    class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:translate-y-0.5 transition-transform duration-150 hover:bg-surface-container-high">
+                    <span class="material-symbols-outlined text-primary text-[20px]">close</span>
+                </button>
+                <h1 class="text-headline-sm font-headline-sm text-primary dark:text-inverse-primary tracking-tight">
+                    六爻入门速记
+                </h1>
+                <button aria-label="书架与图鉴"
+                    class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary active:translate-y-0.5 transition-transform duration-150 hover:bg-surface-container-high">
+                    <span class="material-symbols-outlined text-primary text-[20px]">menu_book</span>
+                </button>
+            </div>
+        </header>
+        <!-- Main Content Container (Chapter List) -->
+        <main class="flex-1 px-4 pt-4 pb-28 flex flex-col gap-4">
+            <!-- Top Title & Global Mastery Pill Banner -->
+            <section
+                class="bg-[#fffdf7] border-2 border-primary-container rounded-2xl p-4 shadow-[0_4px_0_#7b4e2d] relative overflow-hidden">
+                <div class="flex justify-between items-start gap-2 relative z-10">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span
+                                class="inline-block w-2.5 h-2.5 rounded-full bg-[#f1c042] border border-primary-container"></span>
+                            <h2 class="text-headline-md font-headline-md text-primary tracking-tight">章节目录</h2>
+                        </div>
+                        <p class="text-body-sm font-body-sm text-on-surface-variant mt-1 flex items-center gap-1">
+                            <span>循序渐进 · 从基础到断卦</span>
+                        </p>
+                    </div>
+                    <!-- Mastered Progress Badge -->
+                    <div
+                        class="pill-badge bg-secondary-fixed/70 text-on-secondary-fixed px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_2px_0_#7b4e2d]">
+                        <span class="material-symbols-outlined fill-icon text-secondary text-[16px]">stars</span>
+                        <span class="text-label-md font-label-md tracking-wide">总进度 54/220</span>
+                    </div>
+                </div>
+                <!-- Mini Tips / Motivation bar -->
+                <div
+                    class="mt-3 pt-2.5 border-t border-dashed border-outline-variant/60 flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+                    <span class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-tertiary-fixed-dim text-[16px]">bolt</span>
+                        <span>已连续背诵 4 天</span>
+                    </span>
+                    <span
+                        class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded-md border border-outline-variant text-primary">
+                        随时点击复习口诀
+                    </span>
+                </div>
+            </section>
+            <!-- Chapters List -->
+            <div class="flex flex-col gap-3.5">
+                <!-- Chapter 1: 已掌握 -->
+                <article
+                    class="tactile-card bg-[#fffdf7] rounded-2xl p-4 flex flex-col justify-between relative cursor-pointer group">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-8 h-8 rounded-full bg-secondary-container border border-primary-container flex items-center justify-center font-bold text-primary text-label-lg shadow-[0_2px_0_#7b4e2d]">
+                                1
+                            </div>
+                            <div>
+                                <h3 class="text-headline-sm font-headline-sm text-primary tracking-tight">五行生克</h3>
+                                <span class="text-label-sm font-label-sm text-secondary font-bold">10/10 词条已通关</span>
+                            </div>
+                        </div>
+                        <!-- Badge: 已学完 -->
+                        <div
+                            class="pill-badge bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <span class="material-symbols-outlined fill-icon text-secondary text-[15px]">verified</span>
+                            <span class="text-label-sm font-label-sm font-bold">已掌握</span>
+                        </div>
+                    </div>
+                    <!-- Formula Text Box -->
+                    <div class="mt-3 bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/50">
+                        <p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+                            口诀：「木生火，火生土，土生金，金生水，水生木。」
+                        </p>
+                    </div>
+                    <!-- Progress Bar & Action -->
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                        <div
+                            class="flex-1 bg-surface-variant rounded-full h-2.5 border border-primary-container/40 overflow-hidden">
+                            <div class="bg-secondary h-full rounded-full w-full"></div>
+                        </div>
+                        <div class="flex items-center text-primary group-hover:translate-x-1 transition-transform">
+                            <span class="text-label-sm font-label-sm font-bold text-secondary mr-1">100%</span>
+                            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </div>
+                    </div>
+                </article>
+                <!-- Chapter 2: 学习中 (高亮徽章) -->
+                <article
+                    class="tactile-card bg-[#fffdf7] rounded-2xl p-4 flex flex-col justify-between relative cursor-pointer ring-2 ring-tertiary-fixed-dim/80 group">
+                    <!-- Cute pin tab on top-right -->
+                    <div
+                        class="absolute -top-2.5 right-6 bg-[#f1c042] text-on-tertiary-fixed text-label-sm font-label-sm font-bold px-2 py-0.5 rounded-md border border-primary-container shadow-[0_2px_0_#7b4e2d]">
+                        正在进行
+                    </div>
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-8 h-8 rounded-full bg-[#fbc84a]/40 border border-primary-container flex items-center justify-center font-bold text-primary text-label-lg shadow-[0_2px_0_#7b4e2d]">
+                                2
+                            </div>
+                            <div>
+                                <h3 class="text-headline-sm font-headline-sm text-primary tracking-tight">天干</h3>
+                                <span class="text-label-sm font-label-sm text-tertiary-container font-bold">32/60
+                                    掌握中</span>
+                            </div>
+                        </div>
+                        <!-- Badge: 学习中 -->
+                        <div
+                            class="pill-badge bg-tertiary-fixed text-on-tertiary-fixed px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <span
+                                class="material-symbols-outlined fill-icon text-tertiary text-[15px]">local_fire_department</span>
+                            <span class="text-label-sm font-label-sm font-bold">学习中</span>
+                        </div>
+                    </div>
+                    <!-- Formula Text Box -->
+                    <div class="mt-3 bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/50">
+                        <p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+                            口诀：「甲乙东方木，丙丁南方火，戊己中央土，庚辛西方金，壬癸北方水。」
+                        </p>
+                    </div>
+                    <!-- Progress Bar & Action -->
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                        <div
+                            class="flex-1 bg-surface-variant rounded-full h-2.5 border border-primary-container/40 overflow-hidden">
+                            <div class="bg-tertiary-fixed-dim h-full rounded-full" style="width: 53%;"></div>
+                        </div>
+                        <div class="flex items-center text-primary group-hover:translate-x-1 transition-transform">
+                            <span class="text-label-sm font-label-sm font-bold text-primary mr-1">32/60</span>
+                            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </div>
+                    </div>
+                </article>
+                <!-- Chapter 3: 学习中 -->
+                <article
+                    class="tactile-card bg-[#fffdf7] rounded-2xl p-4 flex flex-col justify-between relative cursor-pointer group">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-8 h-8 rounded-full bg-surface-container border border-primary-container flex items-center justify-center font-bold text-primary text-label-lg shadow-[0_2px_0_#7b4e2d]">
+                                3
+                            </div>
+                            <div>
+                                <h3 class="text-headline-sm font-headline-sm text-primary tracking-tight">地支</h3>
+                                <span class="text-label-sm font-label-sm text-on-surface-variant font-bold">12/120
+                                    词条</span>
+                            </div>
+                        </div>
+                        <!-- Badge: 学习中 -->
+                        <div
+                            class="pill-badge bg-surface-container-high text-primary px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[15px]">edit_note</span>
+                            <span class="text-label-sm font-label-sm font-bold">学习中</span>
+                        </div>
+                    </div>
+                    <!-- Formula Text Box -->
+                    <div class="mt-3 bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/50">
+                        <p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+                            口诀：「寅卯木，巳午火，申酉金，亥子水，辰戌丑未土。」
+                        </p>
+                    </div>
+                    <!-- Progress Bar & Action -->
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                        <div
+                            class="flex-1 bg-surface-variant rounded-full h-2.5 border border-primary-container/40 overflow-hidden">
+                            <div class="bg-[#fbc84a] h-full rounded-full" style="width: 10%;"></div>
+                        </div>
+                        <div class="flex items-center text-primary group-hover:translate-x-1 transition-transform">
+                            <span
+                                class="text-label-sm font-label-sm font-bold text-on-surface-variant mr-1">12/120</span>
+                            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </div>
+                    </div>
+                </article>
+                <!-- Chapter 4: 新解锁 -->
+                <article
+                    class="tactile-card bg-[#fffdf7] rounded-2xl p-4 flex flex-col justify-between relative cursor-pointer group">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-8 h-8 rounded-full bg-secondary-fixed/50 border border-primary-container flex items-center justify-center font-bold text-primary text-label-lg shadow-[0_2px_0_#7b4e2d]">
+                                4
+                            </div>
+                            <div>
+                                <h3 class="text-headline-sm font-headline-sm text-primary tracking-tight">刑冲合害</h3>
+                                <span class="text-label-sm font-label-sm text-secondary font-bold">待开启 · 0/30</span>
+                            </div>
+                        </div>
+                        <!-- Badge: 新解锁 -->
+                        <div
+                            class="pill-badge bg-secondary-fixed text-on-secondary-fixed px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[15px]">lock_open</span>
+                            <span class="text-label-sm font-label-sm font-bold">新解锁</span>
+                        </div>
+                    </div>
+                    <!-- Formula Text Box -->
+                    <div class="mt-3 bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/50">
+                        <p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+                            口诀：「六合六对，三合四局，另有三刑、自刑、六冲、六害、相破。」
+                        </p>
+                    </div>
+                    <!-- Progress Bar & Action -->
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                        <div
+                            class="flex-1 bg-surface-variant rounded-full h-2.5 border border-primary-container/40 overflow-hidden">
+                            <div class="bg-secondary-fixed-dim h-full rounded-full" style="width: 0%;"></div>
+                        </div>
+                        <div class="flex items-center text-primary group-hover:translate-x-1 transition-transform">
+                            <span class="text-label-sm font-label-sm font-bold text-on-surface-variant mr-1">0/30</span>
+                            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </div>
+                    </div>
+                </article>
+                <!-- Chapter 5: 未开始 (微弱锁形/淡色) -->
+                <article
+                    class="tactile-card bg-[#f7f5ed] opacity-80 rounded-2xl p-4 flex flex-col justify-between relative cursor-not-allowed border-dashed">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center font-bold text-outline text-label-lg">
+                                5
+                            </div>
+                            <div>
+                                <h3 class="text-headline-sm font-headline-sm text-on-surface-variant tracking-tight">
+                                    十二长生</h3>
+                                <span class="text-label-sm font-label-sm text-outline">未开始</span>
+                            </div>
+                        </div>
+                        <!-- Badge: 锁住 -->
+                        <div
+                            class="pill-badge bg-surface-container text-outline px-2.5 py-1 rounded-full flex items-center gap-1 border-outline/50">
+                            <span class="material-symbols-outlined text-[14px]">lock</span>
+                            <span class="text-label-sm font-label-sm">未开始</span>
+                        </div>
+                    </div>
+                    <!-- Formula Text Box -->
+                    <div class="mt-3 bg-surface-container/60 rounded-xl p-2.5 border border-outline-variant/40">
+                        <p class="text-body-sm font-body-sm text-outline leading-relaxed">
+                            口诀：「看日支的五行，从该五行的长生起点沿地支顺数到爻支。」
+                        </p>
+                    </div>
+                    <!-- Progress Bar & Action -->
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                        <div class="flex-1 bg-surface-variant/60 rounded-full h-2 border border-outline-variant/30">
+                        </div>
+                        <span class="material-symbols-outlined text-outline text-[18px]">lock</span>
+                    </div>
+                </article>
+                <!-- Chapter 6: 未开始 (微弱锁形/淡色) -->
+                <article
+                    class="tactile-card bg-[#f7f5ed] opacity-80 rounded-2xl p-4 flex flex-col justify-between relative cursor-not-allowed border-dashed">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center font-bold text-outline text-label-lg">
+                                6
+                            </div>
+                            <div>
+                                <h3 class="text-headline-sm font-headline-sm text-on-surface-variant tracking-tight">
+                                    六十四卦</h3>
+                                <span class="text-label-sm font-label-sm text-outline">未开始</span>
+                            </div>
+                        </div>
+                        <!-- Badge: 锁住 -->
+                        <div
+                            class="pill-badge bg-surface-container text-outline px-2.5 py-1 rounded-full flex items-center gap-1 border-outline/50">
+                            <span class="material-symbols-outlined text-[14px]">lock</span>
+                            <span class="text-label-sm font-label-sm">未开始</span>
+                        </div>
+                    </div>
+                    <!-- Formula Text Box -->
+                    <div class="mt-3 bg-surface-container/60 rounded-xl p-2.5 border border-outline-variant/40">
+                        <p class="text-body-sm font-body-sm text-outline leading-relaxed">
+                            口诀：「卦象两个字，前一个是上卦，后一个是下卦。」
+                        </p>
+                    </div>
+                    <!-- Progress Bar & Action -->
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                        <div class="flex-1 bg-surface-variant/60 rounded-full h-2 border border-outline-variant/30">
+                        </div>
+                        <span class="material-symbols-outlined text-outline text-[18px]">lock</span>
+                    </div>
+                </article>
+            </div>
+        </main>
+        <!-- Shared BottomNavBar Component -->
+        <!-- Screen represents top-level destination; active tab is "章节" -->
+        <nav
+            class="fixed bottom-0 left-0 w-full rounded-t-[2rem] bg-surface-container-lowest dark:bg-surface-container border-t-2 border-primary-container/20 dark:border-outline-variant/30 shadow-[0_-4px_16px_rgba(123,78,45,0.1)] z-50">
+            <div class="flex justify-around items-center px-4 py-2 pb-6 max-w-md mx-auto">
+                <!-- Tab 1: 今日 (Inactive) -->
+                <button
+                    class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 transition-transform duration-150">
+                    <span class="material-symbols-outlined text-[24px]">calendar_today</span>
+                    <span class="text-label-sm font-label-sm mt-0.5">今日</span>
+                </button>
+                <!-- Tab 2: 章节 (Active) -->
+                <button
+                    class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-fixed rounded-full px-5 py-1.5 shadow-[0_2px_0_#5c381e] active:scale-95 transition-transform duration-150">
+                    <span class="material-symbols-outlined fill-icon text-[24px] text-secondary">auto_stories</span>
+                    <span class="text-label-sm font-label-sm font-bold mt-0.5 text-on-secondary-fixed">章节</span>
+                </button>
+                <!-- Tab 3: 我的 (Inactive) -->
+                <button
+                    class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 transition-transform duration-150">
+                    <span class="material-symbols-outlined text-[24px]">person</span>
+                    <span class="text-label-sm font-label-sm mt-0.5">我的</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+</body>
+
+</html>

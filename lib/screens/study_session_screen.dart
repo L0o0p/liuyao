@@ -11,8 +11,10 @@ import '../models/srs_card.dart';
 import '../services/srs_scheduler.dart';
 import '../services/storage_service.dart';
 import '../services/sync/sync_engine.dart';
+import '../theme/app_theme.dart';
 import '../widgets/flip_card.dart';
 import '../widgets/group_intro_card.dart';
+import '../widgets/tactile.dart';
 import '../widgets/teaching_card.dart';
 import 'chapter_tables_screen.dart';
 
@@ -138,7 +140,8 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
     final question = _questions[_index];
     final now = DateTime.now();
     final current =
-        _cards[question.itemKey] ?? SrsScheduler.introduce(question.itemKey, now);
+        _cards[question.itemKey] ??
+        SrsScheduler.introduce(question.itemKey, now);
     final missedInSession = _missedKeys.contains(question.itemKey);
     final replay = SrsScheduler.replaysInSession(
       card: current,
@@ -266,32 +269,67 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
   @override
   Widget build(BuildContext context) {
     final chapter = _currentChapter;
+    final scheme = Theme.of(context).colorScheme;
+    final showProgress = !_loading && _error == null && _questions.isNotEmpty;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          if (chapter != null)
-            TextButton.icon(
-              onPressed: () => _openTables(chapter),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-              ),
-              icon: const Icon(Icons.table_chart_outlined),
-              label: const Text('查表'),
-            ),
-          if (!_loading && _error == null && _questions.isNotEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Text(
-                  '${_index + 1}/${_questions.length}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+      body: AppBackground(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DetailHeader(
+                title: widget.title,
+                icon: Icons.edit_note,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showProgress)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          '${_index + 1}/${_questions.length}',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(color: scheme.primary),
+                        ),
+                      ),
+                    if (chapter != null)
+                      TactileCard(
+                        onTap: () => _openTables(chapter),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 7,
+                        ),
+                        radius: 999,
+                        depth: 3,
+                        color: scheme.surfaceContainerLowest,
+                        shadowColor: AppColors.border,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.table_chart_outlined,
+                              size: 16,
+                              color: scheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '查表',
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(color: scheme.primary),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (!showProgress)
+                      const SizedBox(width: 40),
+                  ],
                 ),
               ),
-            ),
-        ],
+              Expanded(child: _buildBody()),
+            ],
+          ),
+        ),
       ),
-      body: _buildBody(),
     );
   }
 
@@ -306,7 +344,7 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
           children: [
             Text(_error!),
             const SizedBox(height: 16),
-            FilledButton(onPressed: _load, child: const Text('重试')),
+            TactileButton(label: '重试', onPressed: _load),
           ],
         ),
       );

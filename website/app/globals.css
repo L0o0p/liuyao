@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  --background: #e5f2e0;
+  --foreground: #1c1c15;
+  --ink: #603718;
+  --card: #fffdf7;
+  --accent: #fecb4d;
+  --line: #7b4e2d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta);
+}
+
+body {
+  min-height: 100vh;
+  background-color: #e5f2e0;
+  background-image: radial-gradient(#d3e8cd 1.6px, transparent 1.6px);
+  background-size: 22px 22px;
+  color: var(--foreground);
+  font-family: var(--font-jakarta), "PingFang SC", "Hiragino Sans GB", "Noto Sans SC",
+    "Microsoft YaHei", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+section[id] {
+  scroll-margin-top: 5.5rem;
+}
+
+.biscuit {
+  border: 2px solid #7b4e2d;
+  background: #fffdf7;
+  box-shadow:
+    0 4px 0 rgba(123, 78, 45, 0.16),
+    0 14px 28px rgba(92, 56, 30, 0.06);
+}
+
+.tactile-btn {
+  border: 2px solid #5c381e;
+  background: #fecb4d;
+  color: #603718;
+  box-shadow: 0 4px 0 #5c381e;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease;
+}
+
+.tactile-btn:hover {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #5c381e;
+}
+
+.tactile-btn:focus-visible {
+  outline: 3px solid #4b6548;
+  outline-offset: 3px;
+}

@@ -46,3 +46,9 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Official website
+/website/node_modules
+/website/.next
+/website/out
+/website/.vercel

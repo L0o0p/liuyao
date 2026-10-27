@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <title>今日学习 - 六爻入门速记</title>
+    <!-- Google Fonts: Plus Jakarta Sans & Material Symbols Outlined -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Noto+Sans+SC:wght@500;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f1eee3",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#31312a",
+                        "on-secondary-fixed": "#082009",
+                        "surface-variant": "#e6e2d8",
+                        "on-tertiary-fixed": "#251a00",
+                        "secondary-fixed": "#cdebc5",
+                        "surface-container-highest": "#e6e2d8",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdf9b",
+                        "surface": "#fdf9ee",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#4b6548",
+                        "on-tertiary-fixed-variant": "#5a4300",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#ece8dd",
+                        "on-background": "#1c1c15",
+                        "outline-variant": "#d6c3b8",
+                        "tertiary-fixed-dim": "#f1c042",
+                        "secondary-fixed-dim": "#b1cfab",
+                        "primary-container": "#7b4e2d",
+                        "on-primary-container": "#ffc39b",
+                        "on-primary-fixed-variant": "#663d1d",
+                        "surface-tint": "#825432",
+                        "surface-bright": "#fdf9ee",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#51443c",
+                        "surface-dim": "#dddacf",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#cdebc5",
+                        "tertiary": "#533e00",
+                        "surface-container-low": "#f7f3e8",
+                        "inverse-on-surface": "#f4f1e6",
+                        "primary": "#603718",
+                        "primary-fixed": "#ffdcc6",
+                        "on-tertiary-container": "#fbc84a",
+                        "on-primary-fixed": "#301400",
+                        "primary-fixed-dim": "#f6ba91",
+                        "background": "#fdf9ee",
+                        "on-surface": "#1c1c15",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#705400",
+                        "inverse-primary": "#f6ba91",
+                        "on-secondary-container": "#516b4d",
+                        "outline": "#83746b",
+                        "on-secondary-fixed-variant": "#344d31"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "1.25rem",
+                        "gutter": "1rem",
+                        "space-lg": "1.5rem",
+                        "space-xl": "2rem",
+                        "space-sm": "0.5rem",
+                        "space-xs": "0.25rem",
+                        "space-md": "1rem"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "headline-md": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "headline-sm": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "body-md": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "label-sm": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "headline-lg": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "body-lg": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "body-sm": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "label-md": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "display": ["Plus Jakarta Sans", "Noto Sans SC"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "700" }],
+                        "headline-md": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "headline-sm": ["18px", { "lineHeight": "26px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "500" }],
+                        "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "800" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "700" }],
+                        "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #e5f2e0;
+            background-image: radial-gradient(#d3e8cd 1.5px, transparent 1.5px);
+            background-size: 20px 20px;
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 22px;
+            line-height: 1;
+            display: inline-block;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+
+        /* Tactile 2.5D Physical Depth Styles */
+        .tactile-card {
+            border: 2px solid #7b4e2d;
+            box-shadow: 0 4px 0 rgba(123, 78, 45, 0.15), 0 8px 16px rgba(123, 78, 45, 0.06);
+        }
+
+        .tactile-card-flat {
+            border: 2px solid #7b4e2d;
+        }
+
+        .tactile-btn-primary {
+            border: 2px solid #5c381e;
+            box-shadow: 0 4px 0 #5c381e, 0 8px 16px rgba(92, 56, 30, 0.18);
+            transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tactile-btn-primary:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #5c381e, 0 2px 4px rgba(92, 56, 30, 0.12);
+        }
+
+        .tactile-pill-chip {
+            border: 1.5px solid #7b4e2d;
+            box-shadow: 0 2px 0 rgba(123, 78, 45, 0.15);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-on-surface antialiased flex justify-center selection:bg-secondary-container">
+    <!-- Mobile Viewport Frame (mimics iPhone stage) -->
+    <div class="w-full max-w-md min-h-screen flex flex-col justify-between relative pb-28 px-margin">
+        <!-- Top Floating Header Zone -->
+        <header class="pt-6 pb-2">
+            <div class="flex justify-between items-center w-full">
+                <div class="flex items-center gap-2">
+                    <h1 class="text-headline-lg font-headline-lg text-primary tracking-tight">今日学习</h1>
+                    <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-surface text-primary-container tactile-pill-chip">
+                        10月17日 周六
+                    </span>
+                </div>
+                <!-- 签到徽章 -->
+                <button
+                    class="flex items-center gap-1 bg-surface-container-lowest px-3 py-1.5 rounded-full tactile-pill-chip active:scale-95 transition-transform"
+                    title="每日签到">
+                    <span class="material-symbols-outlined text-tertiary-fixed-dim"
+                        style="font-variation-settings: 'FILL' 1;">stars</span>
+                    <span class="text-label-md font-label-md text-primary">已签到</span>
+                </button>
+            </div>
+        </header>
+        <!-- Main Content Flow -->
+        <main class="flex-1 flex flex-col justify-center space-y-space-md py-2">
+            <!-- 1. 连续学习激励贴纸卡片 -->
+            <section class="tactile-card bg-surface-container-lowest rounded-lg p-space-md relative overflow-hidden">
+                <!-- 装饰小底纹气泡 -->
+                <div
+                    class="absolute -right-4 -bottom-4 w-20 h-20 bg-secondary-container/40 rounded-full pointer-events-none">
+                </div>
+                <div class="absolute right-12 -top-6 w-14 h-14 bg-tertiary-fixed/30 rounded-full pointer-events-none">
+                </div>
+                <div class="flex items-center justify-between relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-12 h-12 rounded-full bg-tertiary-fixed/40 border-2 border-primary-container flex items-center justify-center shadow-[0_2px_0_#7b4e2d]">
+                            <span class="material-symbols-outlined text-primary-container"
+                                style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+                        </div>
+                        <div>
+                            <div class="flex items-baseline gap-1.5">
+                                <span class="text-body-sm font-body-sm text-on-surface-variant">连续打卡</span>
+                                <span class="text-headline-lg font-headline-lg text-primary">6</span>
+                                <span class="text-body-md font-body-md text-primary">天</span>
+                            </div>
+                            <p class="text-body-sm font-body-sm text-outline">好棒！保持节奏，记忆更深刻～</p>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-secondary-container text-on-secondary-fixed border border-secondary px-2.5 py-1 rounded-full text-label-sm font-label-sm flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm"
+                            style="font-size: 14px; font-variation-settings: 'FILL' 1;">eco</span>
+                        <span>自律大师</span>
+                    </div>
+                </div>
+            </section>
+            <!-- 2. 核心待办数字双子卡 (Bento-Twin Grid) -->
+            <section class="grid grid-cols-2 gap-space-md">
+                <!-- 左卡：到期复习 -->
+                <div
+                    class="tactile-card bg-surface-container-lowest rounded-lg p-space-md flex flex-col items-center justify-center text-center relative">
+                    <!-- 拟物便利贴角标标签 -->
+                    <div
+                        class="inline-flex items-center gap-1 bg-surface-container text-primary-container border border-primary-container/40 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm mb-2">
+                        <span class="material-symbols-outlined text-xs" style="font-size: 14px;">history</span>
+                        <span>待温故</span>
+                    </div>
+                    <div class="my-1 flex items-baseline justify-center">
+                        <span class="text-display font-display text-primary leading-none">12</span>
+                        <span class="text-body-sm font-body-sm text-outline ml-1">个</span>
+                    </div>
+                    <span class="text-body-sm font-body-sm text-on-surface-variant font-bold">到期复习</span>
+                    <span class="text-label-sm font-label-sm text-outline mt-0.5">巩固遗忘曲线</span>
+                </div>
+                <!-- 右卡：今天可新学 -->
+                <div
+                    class="tactile-card bg-surface-container-lowest rounded-lg p-space-md flex flex-col items-center justify-center text-center relative">
+                    <!-- 拟物便利贴角标标签 -->
+                    <div
+                        class="inline-flex items-center gap-1 bg-secondary-container text-on-secondary-container border border-secondary/40 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm mb-2">
+                        <span class="material-symbols-outlined text-xs" style="font-size: 14px;">auto_awesome</span>
+                        <span>新知识</span>
+                    </div>
+                    <div class="my-1 flex items-baseline justify-center">
+                        <span class="text-display font-display text-secondary leading-none">5</span>
+                        <span class="text-body-sm font-body-sm text-outline ml-1">个</span>
+                    </div>
+                    <span class="text-body-sm font-body-sm text-secondary font-bold">今天可新学</span>
+                    <span class="text-label-sm font-label-sm text-outline mt-0.5">轻松开启新爻位</span>
+                </div>
+            </section>
+            <!-- 3. 核心主操作大按钮 (芝士黄超级大胶囊) -->
+            <section class="pt-2">
+                <button
+                    class="tactile-btn-primary w-full bg-[#fecb4d] text-primary py-4 px-6 rounded-full flex items-center justify-center gap-2 group cursor-pointer">
+                    <span class="material-symbols-outlined text-primary text-2xl"
+                        style="font-variation-settings: 'FILL' 1;">play_circle</span>
+                    <span class="text-headline-md font-headline-md tracking-wider">开始学习</span>
+                    <span
+                        class="material-symbols-outlined text-primary text-2xl group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </button>
+            </section>
+            <!-- 4. 下方轻量模块状态速览 (学习路线进度卡) -->
+            <section class="tactile-card bg-surface-container-lowest rounded-lg p-space-md space-y-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary-container"
+                            style="font-variation-settings: 'FILL' 1;">menu_book</span>
+                        <span class="text-body-lg font-body-lg text-primary">天干地支基础</span>
+                    </div>
+                    <span
+                        class="text-label-sm font-label-sm bg-surface-container text-on-surface-variant px-2.5 py-1 rounded-full border border-primary-container/20">
+                        进行中
+                    </span>
+                </div>
+                <!-- 进度条 -->
+                <div class="w-full bg-surface-variant rounded-full h-3.5 p-0.5 border border-primary-container/30">
+                    <div class="bg-secondary h-full rounded-full transition-all duration-500 shadow-inner"
+                        style="width: 42%;"></div>
+                </div>
+                <div class="flex justify-between items-center text-label-md font-label-md text-on-surface-variant">
+                    <span>共 3 节 · 第 2 节</span>
+                    <span class="text-secondary font-bold">已掌握 42%</span>
+                </div>
+            </section>
+        </main>
+        <!-- 5. 底部固定三项导航栏 (Shared Component: BottomNavBar) -->
+        <!-- JSON: label_texts: ["今日", "章节", "我的"], icons: ["calendar_today", "auto_stories", "person"] -->
+        <!-- Active State Logic: 当前处于“今日”页面，激活“今日”页签 -->
+        <nav
+            class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-6 max-w-md mx-auto bg-surface-container-lowest rounded-t-[2rem] shadow-[0_-4px_16px_rgba(123,78,45,0.1)] border-t-2 border-primary-container/20">
+            <!-- 激活态: 今日 (Exact Match & Style Rules Applied) -->
+            <button
+                class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-fixed rounded-full px-5 py-1.5 shadow-[0_2px_0_#5c381e] active:scale-95 transition-transform duration-150">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+                <span class="text-label-sm font-label-sm mt-0.5">今日</span>
+            </button>
+            <!-- 未激活态: 章节 -->
+            <button
+                class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 duration-150">
+                <span class="material-symbols-outlined">auto_stories</span>
+                <span class="text-label-sm font-label-sm mt-0.5">章节</span>
+            </button>
+            <!-- 未激活态: 我的 -->
+            <button
+                class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 duration-150">
+                <span class="material-symbols-outlined">person</span>
+                <span class="text-label-sm font-label-sm mt-0.5">我的</span>
+            </button>
+        </nav>
+    </div>
+</body>
+
+</html>

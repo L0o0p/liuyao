@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>六爻入门速记 - 我的</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Noto+Sans+SC:wght@500;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f1eee3",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#31312a",
+                        "on-secondary-fixed": "#082009",
+                        "surface-variant": "#e6e2d8",
+                        "on-tertiary-fixed": "#251a00",
+                        "secondary-fixed": "#cdebc5",
+                        "surface-container-highest": "#e6e2d8",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdf9b",
+                        "surface": "#fdf9ee",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#4b6548",
+                        "on-tertiary-fixed-variant": "#5a4300",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#ece8dd",
+                        "on-background": "#1c1c15",
+                        "outline-variant": "#d6c3b8",
+                        "tertiary-fixed-dim": "#f1c042",
+                        "secondary-fixed-dim": "#b1cfab",
+                        "primary-container": "#7b4e2d",
+                        "on-primary-container": "#ffc39b",
+                        "on-primary-fixed-variant": "#663d1d",
+                        "surface-tint": "#825432",
+                        "surface-bright": "#fdf9ee",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#51443c",
+                        "surface-dim": "#dddacf",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#cdebc5",
+                        "tertiary": "#533e00",
+                        "surface-container-low": "#f7f3e8",
+                        "inverse-on-surface": "#f4f1e6",
+                        "primary": "#603718",
+                        "primary-fixed": "#ffdcc6",
+                        "on-tertiary-container": "#fbc84a",
+                        "on-primary-fixed": "#301400",
+                        "primary-fixed-dim": "#f6ba91",
+                        "background": "#e9f2e3", // soft matcha background tone as inspired by reference image
+                        "on-surface": "#1c1c15",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#705400",
+                        "inverse-primary": "#f6ba91",
+                        "on-secondary-container": "#516b4d",
+                        "outline": "#83746b",
+                        "on-secondary-fixed-variant": "#344d31"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin": "1.25rem",
+                        "gutter": "1rem",
+                        "space-lg": "1.5rem",
+                        "space-xl": "2rem",
+                        "space-sm": "0.5rem",
+                        "space-xs": "0.25rem",
+                        "space-md": "1rem"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "headline-md": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "headline-sm": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "body-md": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "label-sm": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "headline-lg": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "body-lg": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "body-sm": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "label-md": ["Plus Jakarta Sans", "Noto Sans SC"],
+                        "display": ["Plus Jakarta Sans", "Noto Sans SC"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "700" }],
+                        "headline-md": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "headline-sm": ["18px", { "lineHeight": "26px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "500" }],
+                        "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "800" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "700" }],
+                        "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            background-color: #e9f2e3;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Biscuit Tactile Card Shadows */
+        .biscuit-card {
+            background-color: #fffbf0;
+            border: 2px solid #7b4e2d;
+            box-shadow: 0 4px 0 rgba(123, 78, 45, 0.15), 0 8px 16px rgba(123, 78, 45, 0.08);
+        }
+
+        /* Tactile Pressable Push Buttons */
+        .biscuit-btn-primary {
+            background-color: #fecb4d;
+            border: 2px solid #7b4e2d;
+            box-shadow: 0 4px 0 #5c381e, 0 6px 12px rgba(92, 56, 30, 0.12);
+            transition: all 0.1s ease;
+        }
+
+        .biscuit-btn-primary:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #5c381e;
+        }
+
+        .biscuit-btn-secondary {
+            background-color: #fdf9ee;
+            border: 2px solid #7b4e2d;
+            box-shadow: 0 3px 0 #7b4e2d, 0 4px 8px rgba(123, 78, 45, 0.08);
+            transition: all 0.1s ease;
+        }
+
+        .biscuit-btn-secondary:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 #7b4e2d;
+        }
+
+        .biscuit-btn-danger {
+            background-color: #fff1f0;
+            border: 2px solid #ba1a1a;
+            box-shadow: 0 3px 0 #8b1313;
+            transition: all 0.1s ease;
+        }
+
+        .biscuit-btn-danger:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 #8b1313;
+        }
+
+        /* Toggle switch thumb active state */
+        .peer:checked~.toggle-bg {
+            background-color: #cdebc5;
+            border-color: #4b6548;
+        }
+
+        .peer:checked~.toggle-bg .toggle-dot {
+            transform: translateX(18px);
+            background-color: #4b6548;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-on-surface antialiased flex justify-center pb-28">
+    <!-- Mobile/Handheld Frame Container (matches Flutter screen size mimicry) -->
+    <main class="w-full max-w-md mx-auto min-h-screen flex flex-col bg-[#eaf3e3] relative">
+        <!-- Top App Bar (Shared Component Anchor) -->
+        <header
+            class="bg-surface dark:bg-surface border-b-2 border-primary-container/20 dark:border-outline-variant/30 shadow-[0_2px_0_rgba(123,78,45,0.08)] sticky top-0 z-40">
+            <div class="flex justify-between items-center w-full px-4 h-14 max-w-md mx-auto">
+                <button
+                    class="w-9 h-9 rounded-full bg-surface-container-low border border-primary-container/30 flex items-center justify-center text-primary active:translate-y-0.5 transition-transform duration-150 hover:bg-surface-container">
+                    <span class="material-symbols-outlined text-[20px]" data-icon="close">close</span>
+                </button>
+                <h1 class="text-headline-sm font-headline-sm text-primary tracking-tight font-bold">
+                    六爻入门速记
+                </h1>
+                <button
+                    class="w-9 h-9 rounded-full bg-surface-container-low border border-primary-container/30 flex items-center justify-center text-primary active:translate-y-0.5 transition-transform duration-150 hover:bg-surface-container">
+                    <span class="material-symbols-outlined text-[20px]" data-icon="menu_book">menu_book</span>
+                </button>
+            </div>
+        </header>
+        <!-- Main Scroll Content Area -->
+        <div class="px-5 py-4 flex flex-col gap-4">
+            <!-- 1. 顶部个人学习概览卡 (Cream Paper Card with Biscuit Edge & Kawaii Badge) -->
+            <section class="biscuit-card rounded-lg p-5 relative overflow-hidden">
+                <!-- Background playful stamp pattern circle -->
+                <div
+                    class="absolute -right-6 -bottom-6 w-28 h-28 bg-[#fdf2d0] rounded-full pointer-events-none opacity-60">
+                </div>
+                <div class="flex items-start justify-between relative z-10">
+                    <div>
+                        <div
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fdecd2] border border-primary-container/30 mb-2">
+                            <span class="material-symbols-outlined text-[#e07129] text-[16px]"
+                                data-icon="local_fire_department" data-weight="fill"
+                                style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+                            <span class="text-label-sm font-label-sm text-primary">学习打卡进行中</span>
+                        </div>
+                        <div class="flex items-baseline gap-1 mt-1">
+                            <span class="text-body-md font-body-md text-primary font-bold">连续学习</span>
+                            <span class="text-display font-display text-primary leading-none ml-1">6</span>
+                            <span class="text-headline-sm font-headline-sm text-primary font-bold">天</span>
+                        </div>
+                        <p class="text-body-sm font-body-sm text-on-surface-variant mt-1.5">
+                            每天几分钟，熟记六爻基础
+                        </p>
+                    </div>
+                    <!-- Illustrated Kawaii Mascot / Medal Sticker -->
+                    <div
+                        class="flex flex-col items-center justify-center w-16 h-16 rounded-full bg-[#fef5d6] border-2 border-[#7b4e2d] shadow-[0_2px_0_#5c381e] shrink-0 rotate-2">
+                        <span class="material-symbols-outlined text-[#e9a117] text-[30px]" data-icon="military_tech"
+                            data-weight="fill" style="font-variation-settings: 'FILL' 1;">military_tech</span>
+                        <span class="text-[9px] font-bold text-primary -mt-1 leading-none">Lv.2 乾卦</span>
+                    </div>
+                </div>
+                <!-- Mini encouragement badge quote -->
+                <div class="mt-4 pt-3 border-t border-primary-container/15 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-[16px]"
+                        data-icon="check_circle">check_circle</span>
+                    <span class="text-body-sm font-body-sm text-on-surface-variant">今日速记复习已达标，继续保持节奏！</span>
+                </div>
+            </section>
+            <!-- 2. 「整体掌握度」核心统计卡片 -->
+            <section class="biscuit-card rounded-lg p-5">
+                <div class="flex items-center justify-between mb-3.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-4 bg-primary-container rounded-full inline-block"></span>
+                        <h2 class="text-headline-sm font-headline-sm text-primary">整体掌握度</h2>
+                    </div>
+                    <span
+                        class="text-label-md font-label-md px-2.5 py-0.5 rounded-full bg-surface-container-high border border-primary-container/20 text-on-surface-variant">共
+                        321 词条</span>
+                </div>
+                <!-- 3 Data Capsules Horizontal -->
+                <div class="grid grid-cols-3 gap-2.5 mb-4">
+                    <!-- 已掌握 (Mint accent) -->
+                    <div
+                        class="flex flex-col items-center justify-center py-2.5 px-1 rounded-DEFAULT bg-[#ecf9ea] border-2 border-[#548050] shadow-[0_2px_0_#385a35]">
+                        <span class="text-label-sm font-label-sm text-[#385a35] flex items-center gap-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#548050]"></span> 已掌握
+                        </span>
+                        <span class="text-headline-md font-headline-md text-[#234221] mt-0.5 font-extrabold">54</span>
+                    </div>
+                    <!-- 学习中 (Honey Warm Orange) -->
+                    <div
+                        class="flex flex-col items-center justify-center py-2.5 px-1 rounded-DEFAULT bg-[#fff5db] border-2 border-[#b87c14] shadow-[0_2px_0_#754d09]">
+                        <span class="text-label-sm font-label-sm text-[#754d09] flex items-center gap-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#e39c1e]"></span> 学习中
+                        </span>
+                        <span class="text-headline-md font-headline-md text-[#523504] mt-0.5 font-extrabold">37</span>
+                    </div>
+                    <!-- 未学 (Cream Grey) -->
+                    <div
+                        class="flex flex-col items-center justify-center py-2.5 px-1 rounded-DEFAULT bg-[#f1eee3] border-2 border-[#83746b] shadow-[0_2px_0_#544841]">
+                        <span class="text-label-sm font-label-sm text-outline flex items-center gap-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#83746b]"></span> 未学
+                        </span>
+                        <span
+                            class="text-headline-md font-headline-md text-on-surface-variant mt-0.5 font-extrabold">230</span>
+                    </div>
+                </div>
+                <!-- Segmented Rainbow Progress Bar -->
+                <div class="mb-3">
+                    <div
+                        class="flex justify-between items-center text-label-sm font-label-sm text-on-surface-variant mb-1.5 px-0.5">
+                        <span>掌握进度 16.8%</span>
+                        <span>待学 71.6%</span>
+                    </div>
+                    <!-- Tactile Inset Bar -->
+                    <div
+                        class="w-full h-4 bg-[#e6e2d8] rounded-full p-0.5 border-2 border-primary-container/40 flex overflow-hidden">
+                        <!-- 54/321 approx 16.8% -->
+                        <div class="h-full bg-[#7ac471] rounded-l-full border-r border-[#3a6833]" style="width: 16.8%;">
+                        </div>
+                        <!-- 37/321 approx 11.5% -->
+                        <div class="h-full bg-[#fecb4d] border-r border-[#966b17]" style="width: 11.5%;"></div>
+                        <!-- Remaining approx 71.7% -->
+                        <div class="h-full bg-[#d6c3b8] rounded-r-full" style="width: 71.7%;"></div>
+                    </div>
+                </div>
+                <!-- Explanation Footer Note -->
+                <div
+                    class="p-2.5 rounded-DEFAULT bg-[#f9f5e8] border border-dashed border-primary-container/30 flex items-start gap-2">
+                    <span class="material-symbols-outlined text-[#825432] text-[18px] shrink-0 mt-0.5"
+                        data-icon="info">info</span>
+                    <p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+                        已掌握是进入复习且间隔不少于 21 天的知识点。各章的掌握情况在「章节」里看。
+                    </p>
+                </div>
+            </section>
+            <!-- 3. 「学习数据管理」功能卡片 -->
+            <section class="biscuit-card rounded-lg p-5">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]"
+                        data-icon="sync_saved_locally">sync_saved_locally</span>
+                    <h2 class="text-headline-sm font-headline-sm text-primary">学习数据管理</h2>
+                </div>
+                <p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed mb-4">
+                    可导出到文件，换机时再导入。导入会与本机数据合并，不会覆盖较新的记录。旧版本导出的备份也能导入。
+                </p>
+                <!-- Two Tactile Buttons in Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button
+                        class="biscuit-btn-secondary rounded-full py-2.5 px-3 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span class="material-symbols-outlined text-primary text-[18px]"
+                            data-icon="upload_file">upload_file</span>
+                        <span class="text-label-md font-label-md text-primary">导出学习数据</span>
+                    </button>
+                    <button
+                        class="biscuit-btn-secondary rounded-full py-2.5 px-3 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span class="material-symbols-outlined text-primary text-[18px]"
+                            data-icon="download_for_offline">download_for_offline</span>
+                        <span class="text-label-md font-label-md text-primary">导入学习数据</span>
+                    </button>
+                </div>
+            </section>
+            <!-- 4. 「设置与偏好」卡片 -->
+            <section class="biscuit-card rounded-lg p-5">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="material-symbols-outlined text-primary text-[20px]" data-icon="tune">tune</span>
+                    <h2 class="text-headline-sm font-headline-sm text-primary">学习偏好设置</h2>
+                </div>
+                <div class="divide-y divide-primary-container/15">
+                    <!-- Item 1: 每日新学目标 -->
+                    <div class="py-3 flex items-center justify-between">
+                        <div>
+                            <div class="text-body-md font-body-md text-on-surface font-bold">每日新学目标</div>
+                            <div class="text-body-sm font-body-sm text-on-surface-variant">每天推送新知识条目</div>
+                        </div>
+                        <div
+                            class="flex items-center gap-2 bg-[#fdf9ee] border-2 border-primary-container/30 px-3 py-1 rounded-full shadow-[0_1.5px_0_rgba(123,78,45,0.2)]">
+                            <span class="text-label-md font-label-md text-primary font-extrabold">5 条</span>
+                            <span class="material-symbols-outlined text-primary text-[16px]"
+                                data-icon="unfold_more">unfold_more</span>
+                        </div>
+                    </div>
+                    <!-- Item 2: 答题震动反馈 Toggle -->
+                    <div class="py-3 flex items-center justify-between">
+                        <div>
+                            <div class="text-body-md font-body-md text-on-surface font-bold">答题震动反馈</div>
+                            <div class="text-body-sm font-body-sm text-on-surface-variant">选择答案时产生触感</div>
+                        </div>
+                        <!-- Custom Tactile Switch -->
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input checked="" class="sr-only peer" type="checkbox" />
+                            <div
+                                class="w-12 h-7 bg-surface-container-highest border-2 border-outline-variant peer-focus:outline-none rounded-full peer toggle-bg transition-colors relative">
+                                <div
+                                    class="toggle-dot absolute top-[2px] left-[2px] bg-outline w-5 h-5 rounded-full transition-transform border border-primary-container/30">
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <!-- Item 3: 自动发音 / 提示读音 -->
+                    <div class="py-3 flex items-center justify-between">
+                        <div>
+                            <div class="text-body-md font-body-md text-on-surface font-bold">卦名语音速读</div>
+                            <div class="text-body-sm font-body-sm text-on-surface-variant">翻开卡片自动朗读干支卦名</div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input class="sr-only peer" type="checkbox" />
+                            <div
+                                class="w-12 h-7 bg-surface-container-highest border-2 border-outline-variant peer-focus:outline-none rounded-full peer toggle-bg transition-colors relative">
+                                <div
+                                    class="toggle-dot absolute top-[2px] left-[2px] bg-outline w-5 h-5 rounded-full transition-transform border border-primary-container/30">
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </section>
+            <!-- 5. 危险操作区 (Distinct Separation to Prevent Accidental Tap) -->
+            <section class="mt-4 mb-2 flex flex-col items-center">
+                <div class="flex items-center gap-1.5 text-outline text-body-sm font-body-sm mb-3">
+                    <span class="material-symbols-outlined text-[16px]" data-icon="warning">warning</span>
+                    <span>敏感数据管理区</span>
+                </div>
+                <button
+                    class="biscuit-btn-danger w-full py-3 px-4 rounded-full flex items-center justify-center gap-2 cursor-pointer text-error font-bold text-label-lg active:scale-98 transition-transform">
+                    <span class="material-symbols-outlined text-error text-[20px]"
+                        data-icon="delete_forever">delete_forever</span>
+                    <span>清空全部卡片</span>
+                </button>
+                <span class="text-label-sm font-label-sm text-outline mt-1.5">此操作将移除本地复习进度，建议提前导出备份</span>
+            </section>
+            <!-- Version Stamp Footnote -->
+            <div class="text-center pb-4 text-label-sm font-label-sm text-outline">
+                六爻速记卡片 · v1.4.2 (Matcha Build)
+            </div>
+        </div>
+        <!-- 6. 底部固定三项导航栏 (Shared Component Anchor) -->
+        <!-- Destination Rule applied: "我的" is the currently active navigation item -->
+        <nav
+            class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-6 max-w-md mx-auto bg-surface-container-lowest dark:bg-surface-container rounded-t-[2rem] border-t-2 border-primary-container/20 dark:border-outline-variant/30 shadow-[0_-4px_16px_rgba(123,78,45,0.1)]">
+            <!-- Tab 1: 今日 (Inactive) -->
+            <a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 duration-150"
+                href="#">
+                <span class="material-symbols-outlined text-[24px]" data-icon="calendar_today">calendar_today</span>
+                <span class="text-label-sm font-label-sm mt-0.5">今日</span>
+            </a>
+            <!-- Tab 2: 章节 (Inactive) -->
+            <a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:bg-surface-container-high transition-colors active:scale-95 duration-150"
+                href="#">
+                <span class="material-symbols-outlined text-[24px]" data-icon="auto_stories">auto_stories</span>
+                <span class="text-label-sm font-label-sm mt-0.5">章节</span>
+            </a>
+            <!-- Tab 3: 我的 (Active State strictly applied from JSON style_active_navigation) -->
+            <a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-fixed rounded-full px-5 py-1.5 shadow-[0_2px_0_#5c381e] active:scale-95 transition-transform duration-150"
+                href="#">
+                <span class="material-symbols-outlined text-[24px]" data-icon="person" data-weight="fill"
+                    style="font-variation-settings: 'FILL' 1;">person</span>
+                <span class="text-label-sm font-label-sm font-bold mt-0.5">我的</span>
+            </a>
+        </nav>
+    </main>
+    <script>
+        // Lightweight tactile press micro-interactions for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', function () { }, { passive: true });
+        });
+    </script>
+</body>
+
+</html>

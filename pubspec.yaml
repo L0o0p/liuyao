@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+4
+version: 1.0.0+6
 
 environment:
   sdk: ^3.8.1
@@ -103,8 +103,8 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/icon.png"
-    background_color: "#F5F0E8"  # 米白色背景，与应用风格一致
-    theme_color: "#8B4513"  # 棕色主题色，与古钱币颜色匹配
+    background_color: "#FDFAEB"  # 图标顶部的米白色
+    theme_color: "#8B4513"  # 棕色主题色，与铜钱描边一致
   windows:
     generate: true
     image_path: "assets/icon.png"
@@ -115,7 +115,7 @@ flutter_launcher_icons:
 
 # 启动屏幕配置
 flutter_native_splash:
-  color: "#F5F0E8"  # 米白色背景，与图片风格匹配
+  color: "#FDF9ED"  # 与开屏图背景一致
   image: assets/splash.png
   
   android: true
@@ -125,7 +125,7 @@ flutter_native_splash:
   # Android 12+ 配置
   android_12:
     image: assets/splash.png
-    color: "#F5F0E8"
+    color: "#FDF9ED"
   
   # 全屏模式
   fullscreen: true
