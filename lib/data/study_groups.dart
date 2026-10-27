@@ -321,6 +321,40 @@ List<StudyGroup> _buildGroups() {
           '甲子旬戌亥，甲戌旬申酉，甲申旬午未，甲午旬辰巳，甲辰旬寅卯，甲寅旬子丑。',
     ),
     ..._guaPalaceGroups(_table(gua, '卦名与卦象')),
+    byTypes(
+      id: 'shiying',
+      title: '寻世应',
+      chapterId: 'shiying',
+      types: [KnowledgeCatalog.shiYingType],
+      tables: shiYingAtlas().tables,
+      mnemonic:
+          '本宫在上爻，一世在初爻，二世在二爻，三世在三爻，四世在四爻，五世在五爻，'
+          '游魂同四世，归魂同三世。应爻与世爻隔两位。',
+    ),
+    byTypes(
+      id: 'liuqin',
+      title: '寻六亲',
+      chapterId: 'liuqin',
+      types: [KnowledgeCatalog.liuQinType],
+      tables: liuQinAtlas().tables,
+      mnemonic: '以卦宫五行为我：生我父母，比和兄弟，我生子孙，我克妻财，克我官鬼。',
+    ),
+    byTypes(
+      id: 'yongshen',
+      title: '定用神',
+      chapterId: 'yongshen',
+      types: [KnowledgeCatalog.yongShenType],
+      tables: yongShenAtlas().tables,
+      mnemonic: '钱财、妻子取妻财，丈夫、官职、疾病取官鬼，父母、文书学业、房屋车船取父母，子女、医药取子孙，兄弟朋友取兄弟，测自己取世爻。',
+    ),
+    byTypes(
+      id: 'wangxiang',
+      title: '判断旺相',
+      chapterId: 'wangxiang',
+      types: [KnowledgeCatalog.wangXiangType],
+      tables: wangXiangAtlas().tables,
+      mnemonic: '以月令五行为我：同我为旺，我生为相，生我为休，克我为囚，我克为死。',
+    ),
   ];
 
   final ids = <String>{};

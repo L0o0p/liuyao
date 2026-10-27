@@ -167,6 +167,52 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('错误'), findsOneWidget);
     expect(find.text('下一题'), findsOneWidget);
+    expect(find.text('1/1'), findsOneWidget);
+  });
+
+  testWidgets('答错不增加总题数，做完计划里的题就结束', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StudySessionScreen(
+          title: '判断旺相',
+          loadItemKeys: () async => ['wangxiang:旺', 'wangxiang:相'],
+        ),
+      ),
+    );
+    await settle(tester);
+
+    expect(find.text('1/2'), findsOneWidget);
+    await tester.tap(find.text('记住了，开始答题'));
+    await settle(tester);
+    expect(find.text('1/2'), findsOneWidget);
+
+    const states = ['旺', '相', '休', '囚', '死'];
+    final wrong = states.firstWhere(
+      (option) =>
+          option != '旺' &&
+          find.widgetWithText(ElevatedButton, option).evaluate().isNotEmpty,
+    );
+    await tester.tap(find.widgetWithText(ElevatedButton, wrong));
+    await settle(tester);
+    expect(find.text('错误'), findsOneWidget);
+    expect(find.text('1/2'), findsOneWidget);
+
+    final next = find.text('下一题');
+    await tester.ensureVisible(next);
+    await tester.tap(next);
+    await settle(tester);
+    expect(find.text('2/2'), findsOneWidget);
+
+    await tester.tap(find.text('记住了，开始答题'));
+    await settle(tester);
+    expect(find.text('2/2'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ElevatedButton, '相'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    expect(find.text('本次练完了'), findsOneWidget);
+    expect(find.text('3/2'), findsNothing);
+    expect(find.text('2/3'), findsNothing);
   });
 
   testWidgets('我的页有连续学习、整体掌握度和导入导出', (WidgetTester tester) async {

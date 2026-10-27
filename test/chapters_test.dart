@@ -12,6 +12,10 @@ void main() {
       '十二长生',
       '算空亡',
       '六十四卦',
+      '寻世应',
+      '寻六亲',
+      '定用神',
+      '判断旺相',
     ]);
     expect(
       Chapters.all.map((chapter) => chapter.id).toSet(),
@@ -76,6 +80,11 @@ void main() {
     expect(Chapters.byId('changsheng')!.items, hasLength(17));
     expect(Chapters.byId('kongwang')!.items, hasLength(6));
     expect(Chapters.forQuestionType('kongwang')!.id, 'kongwang');
+    expect(Chapters.byId('shiying')!.items, hasLength(8));
+    expect(Chapters.forQuestionType('shiying')!.id, 'shiying');
+    expect(Chapters.byId('liuqin')!.items, hasLength(5));
+    expect(Chapters.byId('yongshen')!.items, hasLength(12));
+    expect(Chapters.byId('wangxiang')!.items, hasLength(5));
   });
 
   test('六十四卦章每 16 题休息，其余章节不打断', () {

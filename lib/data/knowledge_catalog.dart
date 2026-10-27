@@ -7,6 +7,10 @@ import '../services/rule_functions.dart';
 import 'di_zhi.dart';
 import 'gua_data.dart';
 import 'kong_wang.dart';
+import 'liu_qin.dart';
+import 'shi_ying.dart';
+import 'wang_xiang.dart';
+import 'yong_shen.dart';
 import 'tian_gan.dart';
 import 'wu_xing.dart';
 import 'zhi_relations.dart';
@@ -87,6 +91,18 @@ class KnowledgeCatalog {
   /// 算空亡的复习卡挂在六旬上。出题每次从这一旬里另抽一个日柱。
   static const String kongWangType = 'kongwang';
 
+  /// 寻世应的复习卡挂在八个世次上。出题每次从该世次的八卦里另抽一卦。
+  static const String shiYingType = 'shiying';
+
+  /// 寻六亲的复习卡挂在五个六亲上。出题每次另抽一卦和爻支。
+  static const String liuQinType = 'liuqin';
+
+  /// 定用神按所测之事逐条记。
+  static const String yongShenType = 'yongshen';
+
+  /// 判断旺相的复习卡挂在旺相休囚死上。出题每次另抽月支和爻支。
+  static const String wangXiangType = 'wangxiang';
+
   static const Map<String, String> questionTypeLabels = {
     'gan_wuxing': '天干五行',
     'zhi_wuxing': '地支五行',
@@ -117,6 +133,10 @@ class KnowledgeCatalog {
     kongWangType: '算空亡',
     'gua_to_xiang': '六十四卦',
     'xiang_to_gua': '六十四卦',
+    shiYingType: '寻世应',
+    liuQinType: '寻六亲',
+    yongShenType: '定用神',
+    wangXiangType: '判断旺相',
   };
 
   static final List<KnowledgeItem> items = _buildItems();
@@ -204,6 +224,15 @@ class KnowledgeCatalog {
     final rng = random ?? Random();
     if (questionType == kongWangType) {
       return kongWangQuestion(xun: input, random: rng);
+    }
+    if (questionType == shiYingType) {
+      return shiYingQuestion(shiCi: input, random: rng);
+    }
+    if (questionType == liuQinType) {
+      return liuQinQuestion(liuQin: input, random: rng);
+    }
+    if (questionType == wangXiangType) {
+      return wangXiangQuestion(state: input, random: rng);
     }
     if (isChangShengRule(questionType) && rng.nextInt(4) != 0) {
       final String riZhi;
@@ -300,6 +329,120 @@ class KnowledgeCatalog {
       questionType: kongWangType,
       input: xun,
       context: {'riGan': day.gan, 'riZhi': day.zhi},
+    );
+  }
+
+  /// 世应推算题。卡片记在世次上，题面是这个世次里的一卦。
+  static Question shiYingQuestion({
+    required String shiCi,
+    String? guaName,
+    Random? random,
+  }) {
+    final item = find(shiYingType, shiCi);
+    final guas = guasInGeneration(shiCi);
+    if (item == null || guas.isEmpty) {
+      throw ArgumentError('无法推算世应: $shiCi');
+    }
+    final rng = random ?? Random();
+    final String name;
+    if (guaName == null) {
+      name = guas[rng.nextInt(guas.length)];
+    } else if (guas.contains(guaName)) {
+      name = guaName;
+    } else {
+      throw ArgumentError('$guaName不是$shiCi卦');
+    }
+    final answer = shiYingOf(name);
+    if (answer == null || answer != item.correctAnswer) {
+      throw StateError('世应计算和目录不一致: $shiCi $name');
+    }
+    return Question(
+      text: '${guaTitle(name)}，世爻和应爻在哪？',
+      options: _options(answer, item.distractors, rng),
+      correctAnswer: answer,
+      questionType: shiYingType,
+      input: shiCi,
+      context: {'gua': name},
+    );
+  }
+
+  /// 六亲推算题。卡片记在六亲上，题面是一卦加一个爻支。
+  static Question liuQinQuestion({
+    required String liuQin,
+    String? guaName,
+    String? yaoZhi,
+    Random? random,
+  }) {
+    final item = find(liuQinType, liuQin);
+    if (item == null || !liuQinNames.contains(liuQin)) {
+      throw ArgumentError('无法推算六亲: $liuQin');
+    }
+    final rng = random ?? Random();
+    final String name;
+    final String zhi;
+    if (guaName == null && yaoZhi == null) {
+      final gong = wuXingSheng.keys.toList()[rng.nextInt(wuXingSheng.length)];
+      final yaoElement = yaoWuXingForLiuQin(gong, liuQin);
+      final zhis = zhiOfWuXing(yaoElement);
+      final guas = guasForPalaceElement(gong);
+      name = guas[rng.nextInt(guas.length)];
+      zhi = zhis[rng.nextInt(zhis.length)];
+    } else if (guaName != null && yaoZhi != null) {
+      name = guaName;
+      zhi = yaoZhi;
+    } else {
+      throw ArgumentError('卦名和爻支要一起给');
+    }
+    final answer = liuQinOfGua(name, zhi);
+    if (answer == null || answer != item.correctAnswer) {
+      throw StateError('六亲计算和目录不一致: $liuQin $name $zhi');
+    }
+    return Question(
+      text: '${guaTitle(name)}，爻支$zhi，此爻是什么六亲？',
+      options: _options(answer, item.distractors, rng),
+      correctAnswer: answer,
+      questionType: liuQinType,
+      input: liuQin,
+      context: {'gua': name, 'yaoZhi': zhi},
+    );
+  }
+
+  /// 旺相推算题。卡片记在状态上，题面是月支加爻支。
+  static Question wangXiangQuestion({
+    required String state,
+    String? monthZhi,
+    String? yaoZhi,
+    Random? random,
+  }) {
+    final item = find(wangXiangType, state);
+    if (item == null || !wangXiangNames.contains(state)) {
+      throw ArgumentError('无法判断旺相: $state');
+    }
+    final rng = random ?? Random();
+    final String month;
+    final String zhi;
+    if (monthZhi == null && yaoZhi == null) {
+      month = diZhiCycle[rng.nextInt(diZhiCycle.length)];
+      final yaoElement = yaoWuXingForWangXiang(zhiWuXing[month]!, state);
+      final zhis = zhiOfWuXing(yaoElement);
+      zhi = zhis[rng.nextInt(zhis.length)];
+    } else if (monthZhi != null && yaoZhi != null) {
+      month = monthZhi;
+      zhi = yaoZhi;
+    } else {
+      throw ArgumentError('月支和爻支要一起给');
+    }
+    final answer = wangXiangOf(month, zhi);
+    if (answer == null || answer != item.correctAnswer) {
+      throw StateError('旺相计算和目录不一致: $state $month $zhi');
+    }
+    return Question(
+      text: '$month月，爻支$zhi，属于旺相休囚死的哪一种？',
+      options: _options(answer, item.distractors, rng),
+      correctAnswer: answer,
+      questionType: wangXiangType,
+      input: state,
+      context: {'monthZhi': month, 'yaoZhi': zhi},
     );
   }
 
@@ -716,6 +859,54 @@ List<KnowledgeItem> _buildItems() {
     );
   }
 
+  final shiPairs = shiYingPairs();
+  for (final ci in shiCiNames) {
+    final answer = shiYingAnswerFor(shiCiNames.indexOf(ci));
+    add(
+      KnowledgeItem(
+        questionType: KnowledgeCatalog.shiYingType,
+        input: ci,
+        correctAnswer: answer,
+        text: '$ci卦，世爻和应爻在哪？',
+        distractors: _without(shiPairs, answer),
+      ),
+    );
+  }
+
+  for (final liuQin in liuQinNames) {
+    add(
+      KnowledgeItem(
+        questionType: KnowledgeCatalog.liuQinType,
+        input: liuQin,
+        correctAnswer: liuQin,
+        text: '哪一种关系取$liuQin？',
+        distractors: _without(liuQinNames, liuQin),
+      ),
+    );
+  }
+  for (final matter in yongShenMatters) {
+    add(
+      KnowledgeItem(
+        questionType: KnowledgeCatalog.yongShenType,
+        input: matter.matter,
+        correctAnswer: matter.yongShen,
+        text: '测${matter.matter}，用神取什么？',
+        distractors: _without(yongShenAnswers, matter.yongShen),
+      ),
+    );
+  }
+  for (final state in wangXiangNames) {
+    add(
+      KnowledgeItem(
+        questionType: KnowledgeCatalog.wangXiangType,
+        input: state,
+        correctAnswer: state,
+        text: '月令的哪一种关系是$state？',
+        distractors: _without(wangXiangNames, state),
+      ),
+    );
+  }
+
   return built;
 }
 
@@ -849,6 +1040,42 @@ List<StudyModule> _buildModules() {
       partSize: 16,
     ),
     StudyModule(
+      id: 'shiying',
+      name: '寻世应',
+      subtitle: '由卦在本宫中的位置找出世爻和应爻',
+      icon: Icons.swap_vert,
+      color: Colors.red,
+      questionTypes: [KnowledgeCatalog.shiYingType],
+      firstRound: FirstRoundKind.eachItem,
+    ),
+    StudyModule(
+      id: 'liuqin',
+      name: '寻六亲',
+      subtitle: '由卦宫五行和爻支五行判断六亲',
+      icon: Icons.family_restroom,
+      color: Colors.pink,
+      questionTypes: [KnowledgeCatalog.liuQinType],
+      firstRound: FirstRoundKind.eachItem,
+    ),
+    StudyModule(
+      id: 'yongshen',
+      name: '定用神',
+      subtitle: '按所测之事选取用神',
+      icon: Icons.center_focus_strong,
+      color: Colors.amber,
+      questionTypes: [KnowledgeCatalog.yongShenType],
+      firstRound: FirstRoundKind.eachItem,
+    ),
+    StudyModule(
+      id: 'wangxiang',
+      name: '判断旺相',
+      subtitle: '由月令判断爻的旺相休囚死',
+      icon: Icons.wb_sunny,
+      color: Colors.lightBlue,
+      questionTypes: [KnowledgeCatalog.wangXiangType],
+      firstRound: FirstRoundKind.eachItem,
+    ),
+    StudyModule(
       id: 'comprehensive',
       name: '综合练习',
       subtitle: '混合各种题型，全面复习',
@@ -863,6 +1090,10 @@ List<StudyModule> _buildModules() {
         'shierchangsheng',
         'kongwang',
         '64gua',
+        'shiying',
+        'liuqin',
+        'yongshen',
+        'wangxiang',
       ],
     ),
   ];

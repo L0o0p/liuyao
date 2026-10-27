@@ -22,7 +22,19 @@ void main() {
     final titles = buildAtlasChapters()
         .map((chapter) => chapter.title)
         .toList();
-    expect(titles, ['五行生克', '天干', '地支', '刑冲合害', '十二长生', '算空亡', '六十四卦']);
+    expect(titles, [
+      '五行生克',
+      '天干',
+      '地支',
+      '刑冲合害',
+      '十二长生',
+      '算空亡',
+      '六十四卦',
+      '寻世应',
+      '寻六亲',
+      '定用神',
+      '判断旺相',
+    ]);
     final gua = buildAtlasChapters().firstWhere(
       (chapter) => chapter.title == '六十四卦',
     );

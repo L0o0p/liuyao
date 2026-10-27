@@ -1,8 +1,13 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liuyao/data/gua_data.dart';
 import 'package:liuyao/data/knowledge_catalog.dart';
 import 'package:liuyao/data/kong_wang.dart';
+import 'package:liuyao/data/liu_qin.dart';
+import 'package:liuyao/data/shi_ying.dart';
+import 'package:liuyao/data/wang_xiang.dart';
+import 'package:liuyao/data/yong_shen.dart';
 import 'package:liuyao/data/teaching_notes.dart';
 import 'package:liuyao/data/zhi_relations.dart';
 import 'package:liuyao/models/question.dart';
@@ -49,6 +54,10 @@ void main() {
       'kongwang',
       'gua_to_xiang',
       'xiang_to_gua',
+      'shiying',
+      'liuqin',
+      'yongshen',
+      'wangxiang',
     ];
     final actual = KnowledgeCatalog.items
         .map((item) => item.questionType)
@@ -246,6 +255,130 @@ void main() {
       expect(drawn.options, hasLength(4));
       final riZhu = drawn.text.substring(0, 2);
       expect(daysInXun('甲午').map((day) => day.text), contains(riZhu));
+    }
+  });
+
+  test('天风姤是乾宫一世，世在初爻、应在四爻', () {
+    final question = KnowledgeCatalog.shiYingQuestion(
+      shiCi: '一世',
+      guaName: '姤',
+      random: Random(1),
+    );
+    expect(question.text, '天风姤，世爻和应爻在哪？');
+    expect(question.correctAnswer, '世初爻，应四爻');
+    expect(question.itemKey, 'shiying:一世');
+    expect(question.context, {'gua': '姤'});
+    expect(question.options, hasLength(4));
+    expect(question.options.toSet(), hasLength(4));
+    expect(shiYingPairs().toSet(), containsAll(question.options));
+
+    expect(shiYingSteps('姤'), [
+      '天风姤是乾宫一世卦',
+      '乾宫依次是乾、姤、遁、否、观、剥、晋、大有，姤排第2位',
+      '一世卦世在初爻，应在四爻',
+      '世初爻，应四爻',
+    ]);
+    final note = TeachingNotes.forQuestion(question)!;
+    expect(note.fact, '天风姤，世初爻，应四爻');
+    expect(note.hint, endsWith('世初爻，应四爻'));
+
+    expect(shiYingOf('乾'), '世上爻，应三爻');
+    expect(shiYingOf('晋'), '世四爻，应初爻');
+    expect(shiYingOf('大有'), '世三爻，应上爻');
+    expect(shiYingOf('归妹'), '世三爻，应上爻');
+    expect(shiYingPairs(), [
+      '世上爻，应三爻',
+      '世初爻，应四爻',
+      '世二爻，应五爻',
+      '世三爻，应上爻',
+      '世四爻，应初爻',
+      '世五爻，应二爻',
+    ]);
+
+    final names = <String>{};
+    for (final ci in shiCiNames) {
+      final guas = guasInGeneration(ci);
+      expect(guas, hasLength(8), reason: ci);
+      for (final name in guas) {
+        expect(names.add(name), isTrue, reason: name);
+        expect(shiYingOf(name), shiYingAnswerFor(shiCiNames.indexOf(ci)));
+      }
+    }
+    expect(names, hasLength(64));
+
+    for (var seed = 0; seed < 20; seed++) {
+      final drawn = KnowledgeCatalog.generateQuestion(
+        'shiying',
+        '游魂',
+        random: Random(seed),
+      );
+      final again = KnowledgeCatalog.generateQuestion(
+        'shiying',
+        '游魂',
+        random: Random(seed),
+      );
+      expect(again.text, drawn.text);
+      expect(again.options, drawn.options);
+      expect(drawn.itemKey, 'shiying:游魂');
+      expect(drawn.correctAnswer, '世四爻，应初爻');
+      expect(drawn.options, hasLength(4));
+      expect(
+        guasInGeneration('游魂').map(guaTitle),
+        contains(drawn.text.split('，').first),
+      );
+    }
+  });
+
+  test('天风姤爻支寅是妻财，寅月午爻为相，测丈夫取官鬼', () {
+    final liuQin = KnowledgeCatalog.liuQinQuestion(
+      liuQin: '妻财',
+      guaName: '姤',
+      yaoZhi: '寅',
+      random: Random(1),
+    );
+    expect(liuQin.text, '天风姤，爻支寅，此爻是什么六亲？');
+    expect(liuQin.correctAnswer, '妻财');
+    expect(liuQin.itemKey, 'liuqin:妻财');
+    expect(liuQin.options, hasLength(4));
+    expect(liuQinSteps('姤', '寅'), ['天风姤属乾宫，宫五行金', '爻支寅属木', '金克木，我克者为妻财', '妻财']);
+    final liuQinNote = TeachingNotes.forQuestion(liuQin)!;
+    expect(liuQinNote.fact, contains('妻财'));
+    expect(liuQinNote.hint, endsWith('妻财'));
+
+    final wang = KnowledgeCatalog.wangXiangQuestion(
+      state: '相',
+      monthZhi: '寅',
+      yaoZhi: '午',
+      random: Random(1),
+    );
+    expect(wang.text, '寅月，爻支午，属于旺相休囚死的哪一种？');
+    expect(wang.correctAnswer, '相');
+    expect(wang.itemKey, 'wangxiang:相');
+    expect(wang.options.toSet(), hasLength(4));
+    expect(wangXiangSteps('寅', '午'), ['月支寅属木', '爻支午属火', '木生火，月令所生为相', '相']);
+
+    final husband = KnowledgeCatalog.generateQuestion('yongshen', '丈夫');
+    expect(husband.text, '测丈夫，用神取什么？');
+    expect(husband.correctAnswer, '官鬼');
+    expect(husband.itemKey, 'yongshen:丈夫');
+    expect(
+      {for (final matter in yongShenMatters) matter.matter: matter.yongShen},
+      {
+        for (final item in KnowledgeCatalog.itemsForTypes(['yongshen']))
+          item.input: item.correctAnswer,
+      },
+    );
+
+    for (final gua in getAllGuaNames()) {
+      for (final zhi in diZhiCycle) {
+        final answer = liuQinOfGua(gua, zhi);
+        expect(liuQinNames, contains(answer), reason: '$gua $zhi');
+      }
+    }
+    for (final month in diZhiCycle) {
+      for (final zhi in diZhiCycle) {
+        expect(wangXiangNames, contains(wangXiangOf(month, zhi)));
+      }
     }
   });
 

@@ -123,5 +123,25 @@ List<Chapter> _buildChapters() {
       questionTypes: const ['gua_to_xiang', 'xiang_to_gua'],
       restEvery: KnowledgeCatalog.module('64gua')?.partSize,
     ),
+    Chapter(
+      id: 'shiying',
+      atlas: shiYingAtlas(),
+      questionTypes: const [KnowledgeCatalog.shiYingType],
+    ),
+    Chapter(
+      id: 'liuqin',
+      atlas: liuQinAtlas(),
+      questionTypes: const [KnowledgeCatalog.liuQinType],
+    ),
+    Chapter(
+      id: 'yongshen',
+      atlas: yongShenAtlas(),
+      questionTypes: const [KnowledgeCatalog.yongShenType],
+    ),
+    Chapter(
+      id: 'wangxiang',
+      atlas: wangXiangAtlas(),
+      questionTypes: const [KnowledgeCatalog.wangXiangType],
+    ),
   ];
 }

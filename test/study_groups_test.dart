@@ -36,9 +36,9 @@ void main() {
     );
   });
 
-  test('目录 388 条知识点分成 34 组', () {
-    expect(KnowledgeCatalog.items, hasLength(388));
-    expect(StudyGroups.all, hasLength(34));
+  test('目录 418 条知识点分成 38 组', () {
+    expect(KnowledgeCatalog.items, hasLength(418));
+    expect(StudyGroups.all, hasLength(38));
   });
 
   test('小组 id 唯一，大小适中，每组有表和口诀', () {
@@ -96,6 +96,20 @@ void main() {
       'kongwang:甲寅',
     ]);
     expect(kongWang.tables.single.rows, hasLength(6));
+
+    final shiYing = StudyGroups.byId('shiying')!;
+    expect(shiYing.chapterId, 'shiying');
+    expect(shiYing.itemKeys, [
+      'shiying:本宫',
+      'shiying:一世',
+      'shiying:二世',
+      'shiying:三世',
+      'shiying:四世',
+      'shiying:五世',
+      'shiying:游魂',
+      'shiying:归魂',
+    ]);
+    expect(shiYing.tables.map((table) => table.title), ['世次', '八宫卦序']);
   });
 
   test('下一组是第一个还有没引入的知识点的组', () {

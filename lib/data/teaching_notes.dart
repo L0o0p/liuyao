@@ -3,6 +3,9 @@ import 'di_zhi.dart';
 import 'gua_data.dart';
 import 'knowledge_catalog.dart';
 import 'kong_wang.dart';
+import 'liu_qin.dart';
+import 'shi_ying.dart';
+import 'wang_xiang.dart';
 import 'tian_gan.dart';
 import 'wu_xing.dart';
 import 'zhi_relations.dart';
@@ -165,6 +168,34 @@ class TeachingNotes {
               '从日干倒着数到甲，日支退同样的位数得到旬首，再从旬首往回数两位。'
               '甲子旬戌亥，甲戌旬申酉，甲申旬午未，甲午旬辰巳，甲辰旬寅卯，甲寅旬子丑。',
         );
+      case KnowledgeCatalog.liuQinType:
+        return TeachingNote(
+          title: '寻六亲',
+          fact: _liuQinFact(item.correctAnswer),
+          hint: '以卦宫五行为我：生我父母，比和兄弟，我生子孙，我克妻财，克我官鬼。',
+        );
+      case KnowledgeCatalog.yongShenType:
+        return TeachingNote(
+          title: '定用神',
+          fact: '测${item.input}，用神取${item.correctAnswer}',
+          hint:
+              '钱财、妻子取妻财，丈夫、官职、疾病取官鬼，父母、文书学业、房屋车船取父母，'
+              '子女、医药取子孙，兄弟朋友取兄弟，测自己取世爻。',
+        );
+      case KnowledgeCatalog.wangXiangType:
+        return TeachingNote(
+          title: '判断旺相',
+          fact: _wangXiangFact(item.correctAnswer),
+          hint: '以月令五行为我：同我为旺，我生为相，生我为休，克我为囚，我克为死。',
+        );
+      case KnowledgeCatalog.shiYingType:
+        return TeachingNote(
+          title: '寻世应',
+          fact: '${item.input}卦${item.correctAnswer}',
+          hint:
+              '本宫在上爻，一世在初爻，二世在二爻，三世在三爻，四世在四爻，五世在五爻，'
+              '游魂同四世，归魂同三世。应爻与世爻隔两位。',
+        );
       case 'gua_to_xiang':
         return TeachingNote(
           title: '六十四卦',
@@ -202,6 +233,42 @@ class TeachingNotes {
     final riGan = question.context['riGan'];
     final riZhi = question.context['riZhi'];
     final yaoZhi = question.context['yaoZhi'];
+    final gua = question.context['gua'];
+    final monthZhi = question.context['monthZhi'];
+    if (question.questionType == KnowledgeCatalog.liuQinType &&
+        gua != null &&
+        yaoZhi != null) {
+      final steps = liuQinSteps(gua, yaoZhi);
+      if (steps.isNotEmpty) {
+        return TeachingNote(
+          title: '寻六亲',
+          fact: '${guaTitle(gua)}，爻支$yaoZhi，是${question.correctAnswer}',
+          hint: steps.join(' → '),
+        );
+      }
+    }
+    if (question.questionType == KnowledgeCatalog.wangXiangType &&
+        monthZhi != null &&
+        yaoZhi != null) {
+      final steps = wangXiangSteps(monthZhi, yaoZhi);
+      if (steps.isNotEmpty) {
+        return TeachingNote(
+          title: '判断旺相',
+          fact: '$monthZhi月，爻支$yaoZhi，是${question.correctAnswer}',
+          hint: steps.join(' → '),
+        );
+      }
+    }
+    if (question.questionType == KnowledgeCatalog.shiYingType && gua != null) {
+      final steps = shiYingSteps(gua);
+      if (steps.isNotEmpty) {
+        return TeachingNote(
+          title: '寻世应',
+          fact: '${guaTitle(gua)}，${question.correctAnswer}',
+          hint: steps.join(' → '),
+        );
+      }
+    }
     if (question.questionType == KnowledgeCatalog.kongWangType &&
         riGan != null &&
         riZhi != null) {
@@ -292,5 +359,39 @@ class TeachingNotes {
   static String _cycle(Map<String, String> relation, String verb) {
     const order = ['木', '火', '土', '金', '水'];
     return order.map((name) => '$name$verb${relation[name]}').join('，');
+  }
+
+  static String _liuQinFact(String liuQin) {
+    switch (liuQin) {
+      case '父母':
+        return '生我者为父母';
+      case '兄弟':
+        return '比和者为兄弟';
+      case '子孙':
+        return '我生者为子孙';
+      case '妻财':
+        return '我克者为妻财';
+      case '官鬼':
+        return '克我者为官鬼';
+      default:
+        return liuQin;
+    }
+  }
+
+  static String _wangXiangFact(String state) {
+    switch (state) {
+      case '旺':
+        return '与月令同五行为旺';
+      case '相':
+        return '月令所生为相';
+      case '休':
+        return '生月令者为休';
+      case '囚':
+        return '克月令者为囚';
+      case '死':
+        return '月令所克为死';
+      default:
+        return state;
+    }
   }
 }
