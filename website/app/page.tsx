@@ -296,7 +296,7 @@ export default function Home() {
             隐私政策
           </Link>
           <span>版权所有者：{siteConfig.ownerName}</span>
-          <span>网站备案信息：{siteConfig.icpRecordNumber}</span>
+          <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">网站备案信息：{siteConfig.icpRecordNumber}</a>
         </div>
         <p className="mt-4">
           Copyright © {new Date().getFullYear()} {siteConfig.ownerName}. All Rights Reserved.
